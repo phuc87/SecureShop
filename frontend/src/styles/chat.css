@@ -4,7 +4,6 @@
 
 /* Toast nằm trên nút chat để không bị che */
 .toast-stack { bottom: 96px; }
-.ask-btn { margin-top: 12px; }
 
 /* ---------- Widget khách ---------- */
 .chat-widget { position: fixed; right: 20px; bottom: 20px; z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }

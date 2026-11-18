@@ -17,6 +17,11 @@
 }
 .main-menu > li > a:hover { color: var(--primary); text-decoration: none; }
 .main-menu > li > a.active { color: var(--primary); border-bottom-color: var(--primary); }
+@media (min-width: 1025px) {
+  /* Máy tính: menu rộng rãi hơn cho cân với hotline bên phải */
+  .main-menu { gap: 10px; }
+  .main-menu > li > a { padding: 14px 22px; font-size: 15.5px; }
+}
 
 /* Menu xổ "Sản phẩm": mở khi rê chuột hoặc khi focus bằng bàn phím (Tab).
    Canh theo khung nội dung (main-nav-inner) chứ không theo chữ "Sản phẩm", để không tràn mép phải trên máy tính bảng. */

@@ -3,10 +3,12 @@ package com.secureshop.controller;
 import com.secureshop.dto.PageResponse;
 import com.secureshop.dto.product.BrandResponse;
 import com.secureshop.dto.product.CategoryResponse;
+import com.secureshop.dto.product.CompareResponse;
 import com.secureshop.dto.product.ProductDetailResponse;
 import com.secureshop.dto.product.ProductSummaryResponse;
 import com.secureshop.entity.enums.Placement;
 import com.secureshop.dto.review.ProductReviewsResponse;
+import com.secureshop.service.CompareService;
 import com.secureshop.service.ProductService;
 import com.secureshop.service.ReviewService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final ReviewService reviewService;
+    private final CompareService compareService;
 
     /**
      * Danh sách sản phẩm có lọc và phân trang.
@@ -50,6 +53,12 @@ public class ProductController {
     @GetMapping("/products/by-ids")
     public List<ProductSummaryResponse> byIds(@RequestParam(required = false) List<Long> ids) {
         return productService.getByIds(ids);
+    }
+
+    /** GET /api/products/compare?slugs=a,b : so sánh 2 sản phẩm + đề xuất nên chọn cái nào. */
+    @GetMapping("/products/compare")
+    public CompareResponse compare(@RequestParam(required = false) List<String> slugs) {
+        return compareService.compare(slugs);
     }
 
     /** GET /api/products/{slug}/reviews?page=0 : điểm trung bình, phân bố sao, danh sách đánh giá. */

@@ -6,6 +6,9 @@ const authApi = {
   me: () => axiosClient.get('/auth/me'),
   updateProfile: (data) => axiosClient.put('/auth/me', data),
   changePassword: (currentPassword, newPassword) => axiosClient.put('/auth/me/password', { currentPassword, newPassword }),
+  // ===== Đăng nhập Google =====
+  googleConfig: () => axiosClient.get('/auth/google/config'),
+  google: (credential) => axiosClient.post('/auth/google', { credential }),
   // ===== Quên mật khẩu =====
   forgotPassword: (email) => axiosClient.post('/auth/forgot-password', { email }),
   checkResetToken: (token) => axiosClient.get('/auth/reset-password/check', { params: { token } }),

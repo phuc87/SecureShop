@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
@@ -35,6 +35,7 @@ export default function Header() {
   const [searchParams] = useSearchParams();
   const [keyword, setKeyword] = useState(searchParams.get('q') || '');
   const [menuOpen, setMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const { data: categories } = useFetch(() => productApi.categories(), []);
 
   useEffect(() => {
@@ -42,6 +43,21 @@ export default function Header() {
   }, [searchParams]);
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
+
+  // Menu tài khoản: bấm ra ngoài hoặc nhấn Esc thì đóng
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onDown = (e) => { if (!userMenuRef.current?.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -96,7 +112,7 @@ export default function Header() {
           )}
 
           {user ? (
-            <div className="user-menu">
+            <div className="user-menu" ref={userMenuRef}>
               <button type="button" className="user-btn" aria-expanded={menuOpen}
                       onClick={() => setMenuOpen((o) => !o)}>
                 <span className="avatar" aria-hidden="true">{user.fullName.charAt(0)}</span>
@@ -151,6 +167,7 @@ export default function Header() {
                 </div>
               </div>
             </li>
+            <li><NavLink to="/compare">So sánh</NavLink></li>
             <li><NavLink to="/about">Giới thiệu</NavLink></li>
             <li><NavLink to="/contact">Liên hệ</NavLink></li>
           </ul>

@@ -25,6 +25,8 @@ Hệ thống có 2 vai trò lưu trong cột `users.role`, cộng với khách c
 | Đổi vai trò người dùng | ❌ | ❌ | ✅ (trừ chính mình) |
 | Quên mật khẩu (nhận link qua email) | ✅ | (đăng nhập rồi thì dùng Đổi mật khẩu) | ✅ |
 | Sản phẩm yêu thích (bấm trái tim) | ❌ bấm sẽ được mời đăng nhập | ✅ chỉ danh sách của mình | ❌ (không hiện nút) |
+| Dùng mã giảm giá khi thanh toán | ❌ | ✅ | ❌ |
+| Tạo, sửa, tắt, xoá mã giảm giá | ❌ | ❌ | ✅ (mã đã dùng trong đơn chỉ được tắt) |
 | Viết đánh giá sản phẩm | ❌ | ✅ chỉ sản phẩm đã mua, đơn đã **Hoàn thành**, mỗi đơn 1 lần | ❌ |
 | Xoá đánh giá | ❌ | ❌ | ✅ |
 | Thêm, sửa, xoá danh mục & thương hiệu | ❌ | ❌ | ✅ (chỉ xoá khi không còn sản phẩm) |

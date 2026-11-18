@@ -56,6 +56,11 @@ export function OrderItems({ order, linkProducts = true, renderAction }) {
       </ul>
       <dl className="summary-totals">
         <div><dt>Tạm tính</dt><dd>{formatCurrency(order.subtotal)}</dd></div>
+        {Number(order.discount) > 0 && (
+          <div className="summary-discount">
+            <dt>Giảm giá{order.voucherCode ? ` (${order.voucherCode})` : ''}</dt><dd>-{formatCurrency(order.discount)}</dd>
+          </div>
+        )}
         <div><dt>Phí giao hàng</dt><dd>{Number(order.shippingFee) === 0 ? 'Miễn phí' : formatCurrency(order.shippingFee)}</dd></div>
         <div className="summary-total"><dt>Tổng cộng</dt><dd>{formatCurrency(order.total)}</dd></div>
       </dl>

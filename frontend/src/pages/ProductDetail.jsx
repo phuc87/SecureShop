@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import productApi from '../api/productApi';
 import useFetch from '../hooks/useFetch';
 import ProductImage from '../components/common/ProductImage';
@@ -13,7 +13,8 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/common/Icon';
-import { PLACEMENT_LABELS } from '../utils/constants';
+import { FREE_SHIPPING_FROM, PLACEMENT_LABELS } from '../utils/constants';
+import { discountPercent, formatCurrency } from '../utils/format';
 
 function RelatedProducts({ product }) {
   const { data } = useFetch(
@@ -33,9 +34,10 @@ function RelatedProducts({ product }) {
 export default function ProductDetail() {
   const { slug } = useParams();
   const { data: product, loading, error, reload } = useFetch(() => productApi.getBySlug(slug), [slug]);
-  const { addItem } = useCart();
+  const { addItem, selectOnly } = useCart();
   const { canShop } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [reviewPage, setReviewPage] = useState(0);
@@ -69,10 +71,22 @@ export default function ProductDetail() {
   const images = product.images.length ? product.images : [product.thumbnailUrl];
   const outOfStock = product.stock <= 0;
 
+  const off = discountPercent(product.price, product.salePrice);
+
   const handleAdd = () => {
     const finalQty = addItem(product, qty);
     if (finalQty < qty) toast.error(`Chỉ còn ${product.stock} sản phẩm trong kho`);
     else toast.success(`Đã thêm ${qty} "${product.name}" vào giỏ`);
+  };
+
+  /**
+   * Mua ngay: thêm vào giỏ, chỉ chọn riêng món này rồi sang thẳng trang thanh toán
+   * (các món khác vẫn nằm trong giỏ, chưa đăng nhập thì được mời đăng nhập trước).
+   */
+  const handleBuyNow = () => {
+    addItem(product, qty);
+    selectOnly(product.id);
+    navigate('/checkout');
   };
 
   return (
@@ -85,8 +99,11 @@ export default function ProductDetail() {
 
       <div className="detail-layout">
         <div className="detail-gallery">
-          <ProductImage key={images[activeImage]} src={images[activeImage]} alt={product.name}
-                        categoryName={product.category.name} iconSize={140} className="detail-main-image" />
+          <div className="detail-photo">
+            {off > 0 && <span className="detail-photo-badge">-{off}%</span>}
+            <ProductImage key={images[activeImage]} src={images[activeImage]} alt={product.name}
+                          categoryName={product.category.name} iconSize={140} className="detail-main-image" />
+          </div>
           {images.length > 1 && (
             <div className="thumb-row">
               {images.map((src, i) => (
@@ -100,50 +117,89 @@ export default function ProductDetail() {
         </div>
 
         <div className="detail-info">
-          {product.brand && <span className="product-brand">{product.brand.name}</span>}
-          <h1>{product.name}</h1>
-          <p className="muted detail-meta">
+          <div className="detail-tags">
+            {product.brand && (
+              <Link to={`/products?brand=${product.brand.slug}`} className="detail-brand">{product.brand.name}</Link>
+            )}
+            {product.featured && <span className="chip chip-blue">Nổi bật</span>}
+          </div>
+          <h1 className="detail-title">{product.name}</h1>
+          <div className="detail-meta">
             {reviewData?.count > 0 && (
               <a href="#reviews" className="detail-rating"
                  onClick={(e) => { e.preventDefault(); document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                <b>{reviewData.average.toFixed(1)}</b> <Stars value={reviewData.average} size={14} /> ({reviewData.count} đánh giá)
+                <b>{reviewData.average.toFixed(1)}</b> <Stars value={reviewData.average} size={14} />
+                <span>{reviewData.count} đánh giá</span>
               </a>
             )}
-            <span>Mã SP: {product.sku} · Đã bán {product.soldCount}</span>
-          </p>
-          <PriceTag price={product.price} salePrice={product.salePrice} size="lg" />
+            <span>Đã bán <b>{product.soldCount}</b></span>
+            <span>Mã: {product.sku}</span>
+          </div>
+
+          <div className="detail-price-box">
+            <PriceTag price={product.price} salePrice={product.salePrice} size="lg" />
+            {off > 0 && <span className="detail-save">Tiết kiệm {formatCurrency(product.price - product.salePrice)}</span>}
+          </div>
+
           {product.shortDescription && <p className="detail-short">{product.shortDescription}</p>}
 
           <ul className="detail-facts">
-            <li><span>Tình trạng</span><b className={outOfStock ? 'text-danger' : 'text-success'}>
-              {outOfStock ? 'Hết hàng' : `Còn ${product.stock} sản phẩm`}</b></li>
-            <li><span>Bảo hành</span><b>{product.warrantyMonths} tháng</b></li>
-            {product.placement && <li><span>Lắp đặt</span><b>{PLACEMENT_LABELS[product.placement]}</b></li>}
+            <li>
+              <Icon name={outOfStock ? 'close' : 'checkCircle'} size={20} />
+              <span>Tình trạng</span>
+              <b className={outOfStock ? 'text-danger' : 'text-success'}>{outOfStock ? 'Hết hàng' : `Còn ${product.stock}`}</b>
+            </li>
+            <li><Icon name="shieldCheck" size={20} /><span>Bảo hành</span><b>{product.warrantyMonths} tháng</b></li>
+            {product.placement && <li><Icon name="mapPin" size={20} /><span>Lắp đặt</span><b>{PLACEMENT_LABELS[product.placement]}</b></li>}
           </ul>
 
           {!canShop && (
             <div className="alert alert-info">Bạn đang đăng nhập bằng tài khoản quản trị nên không thể mua hàng.</div>
           )}
-          {canShop && !outOfStock && (
-            <div className="buy-row">
-              <div className="qty-stepper" role="group" aria-label="Số lượng">
-                <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Giảm">−</button>
-                <input id="detail-qty" type="number" min="1" max={product.stock} value={qty} aria-label="Số lượng"
-                       onChange={(e) => setQty(Math.max(1, Math.min(product.stock, Number(e.target.value) || 1)))} />
-                <button type="button" onClick={() => setQty((q) => Math.min(product.stock, q + 1))} aria-label="Tăng">+</button>
-              </div>
-              <button type="button" className="btn btn-primary btn-lg" onClick={handleAdd}>Thêm vào giỏ hàng</button>
-            </div>
-          )}
           {canShop && (
-            <div className="detail-secondary">
-              <FavoriteButton product={product} variant="full" />
-              <button type="button" className="btn btn-outline ask-btn"
-                      onClick={() => window.dispatchEvent(new CustomEvent('chat:open', { detail: { product } }))}>
-                <Icon name="headset" size={18} /> Hỏi tư vấn viên về sản phẩm này
-              </button>
+            <div className="detail-buy">
+              {!outOfStock && (
+                <div className="detail-qty">
+                  <span>Số lượng</span>
+                  <div className="qty-stepper" role="group" aria-label="Số lượng">
+                    <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Giảm" disabled={qty <= 1}>−</button>
+                    <input id="detail-qty" type="number" min="1" max={product.stock} value={qty} aria-label="Số lượng"
+                           onChange={(e) => setQty(Math.max(1, Math.min(product.stock, Number(e.target.value) || 1)))} />
+                    <button type="button" onClick={() => setQty((q) => Math.min(product.stock, q + 1))} aria-label="Tăng" disabled={qty >= product.stock}>+</button>
+                  </div>
+                  {product.stock <= 10 && <small className="detail-low">Chỉ còn {product.stock} sản phẩm</small>}
+                </div>
+              )}
+              <div className="detail-cta">
+                <button type="button" className="btn btn-outline btn-lg detail-add" onClick={handleAdd} disabled={outOfStock}>
+                  <Icon name="bag" size={20} /> {outOfStock ? 'Tạm hết hàng' : 'Thêm vào giỏ'}
+                </button>
+                {!outOfStock && (
+                  <button type="button" className="btn btn-primary btn-lg detail-buynow" onClick={handleBuyNow}>
+                    Mua ngay
+                  </button>
+                )}
+              </div>
+              <div className="detail-secondary">
+                <FavoriteButton product={product} variant="full" />
+                <button type="button" className="btn btn-outline ask-btn"
+                        onClick={() => window.dispatchEvent(new CustomEvent('chat:open', { detail: { product } }))}>
+                  <Icon name="headset" size={18} /> Hỏi tư vấn viên
+                </button>
+              </div>
             </div>
           )}
+
+          <Link to={`/compare?a=${encodeURIComponent(product.slug)}`} className="detail-compare">
+            <Icon name="compare" size={18} /> So sánh với sản phẩm khác
+          </Link>
+
+          <ul className="detail-trust">
+            <li><Icon name="truck" size={18} /><span>Miễn phí giao hàng đơn từ {formatCurrency(FREE_SHIPPING_FROM)}</span></li>
+            <li><Icon name="award" size={18} /><span>Hàng chính hãng 100%</span></li>
+            <li><Icon name="refresh" size={18} /><span>Đổi mới trong 7 ngày nếu lỗi</span></li>
+            <li><Icon name="tool" size={18} /><span>Hỗ trợ cài đặt, lắp đặt</span></li>
+          </ul>
         </div>
       </div>
 

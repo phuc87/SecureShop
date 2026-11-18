@@ -9,6 +9,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Compare from './pages/Compare';
 import NotFound from './pages/NotFound';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -30,6 +31,7 @@ import Products from './pages/admin/Products';
 import ProductForm from './pages/admin/ProductForm';
 import Catalog from './pages/admin/Catalog';
 import AiAssistant from './pages/admin/AiAssistant';
+import Vouchers from './pages/admin/Vouchers';
 
 export default function App() {
   return (
@@ -40,6 +42,7 @@ export default function App() {
         <Route path="/products/:slug" element={<ProductDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/compare" element={<Compare />} />
         <Route element={<ShopperRoute />}>
           <Route path="/cart" element={<Cart />} />
         </Route>
@@ -81,6 +84,7 @@ export default function App() {
           <Route path="products/:id" element={<ProductForm />} />
           <Route path="catalog" element={<Catalog />} />
           <Route path="ai" element={<AiAssistant />} />
+          <Route path="vouchers" element={<Vouchers />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="users" element={<Users />} />
           <Route path="contacts" element={<Contacts />} />

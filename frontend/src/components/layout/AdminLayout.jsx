@@ -96,6 +96,7 @@ export default function AdminLayout() {
           </NavLink>
           <NavLink to="/admin/products">Sản phẩm</NavLink>
           <NavLink to="/admin/catalog">Danh mục &amp; thương hiệu</NavLink>
+          <NavLink to="/admin/vouchers">Mã giảm giá</NavLink>
           <NavLink to="/admin/inbox">
             Hộp thư tư vấn {unreadChat > 0 && <span className="menu-badge" aria-label={`${unreadChat} tin chưa đọc`}>{unreadChat}</span>}
           </NavLink>

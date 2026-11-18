@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import GoogleButton from '../../components/auth/GoogleButton';
 
 export default function Login() {
   const { login } = useAuth();
@@ -52,6 +53,7 @@ export default function Login() {
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
+        <GoogleButton text="signin_with" onError={setError} />
         <p className="auth-switch">Chưa có tài khoản? <Link to="/register" state={location.state}>Đăng ký ngay</Link></p>
 
         {import.meta.env.DEV && (

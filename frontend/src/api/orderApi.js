@@ -9,6 +9,8 @@ const orderApi = {
   myOrder: (id) => axiosClient.get(`/orders/${id}`),
   cancel: (id, reason) => axiosClient.post(`/orders/${id}/cancel`, { reason }),
   defaultAddress: () => axiosClient.get('/orders/default-address'),
+  // ===== Mã giảm giá =====
+  voucherQuote: (code, items) => axiosClient.post('/orders/voucher-quote', { code, items }),
   // ===== Đánh giá sản phẩm (chỉ khi đơn đã hoàn thành) =====
   reviewEligibility: (productId) => axiosClient.get('/orders/review-eligibility', { params: { productId } }),
   createReview: (payload) => axiosClient.post('/orders/reviews', payload),

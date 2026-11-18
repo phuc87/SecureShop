@@ -11,6 +11,7 @@ import com.secureshop.entity.enums.TokenType;
 import com.secureshop.exception.ApiException;
 import com.secureshop.repository.UserRepository;
 import com.secureshop.repository.VerificationTokenRepository;
+import com.secureshop.security.GoogleTokenVerifier;
 import com.secureshop.security.JwtService;
 import com.secureshop.security.LoginAttemptService;
 import com.secureshop.security.UserPrincipal;
@@ -38,6 +39,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final LoginAttemptService loginAttempts;
     private final VerificationTokenRepository tokenRepository;
+    private final GoogleTokenVerifier googleVerifier;
     private final ApplicationEventPublisher events;
 
     @Transactional
@@ -54,6 +56,46 @@ public class AuthService {
         user.setRole(Role.CUSTOMER);              // đăng ký công khai luôn là khách hàng
         userRepository.save(user);
         return buildResponse(user);
+    }
+
+    /**
+     * Đăng nhập bằng Google. credential = ID token do nút "Đăng nhập với Google" trả về.
+     *  - Email đã có tài khoản -> đăng nhập vào tài khoản đó (đánh dấu email đã xác minh).
+     *  - Chưa có -> tự tạo tài khoản KHÁCH HÀNG. Mật khẩu là chuỗi ngẫu nhiên không ai biết;
+     *    muốn đăng nhập bằng mật khẩu thì dùng "Quên mật khẩu" để đặt.
+     */
+    @Transactional
+    public AuthResponse loginWithGoogle(String credential) {
+        if (!googleVerifier.isEnabled()) {
+            throw new ApiException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                    "Chưa bật đăng nhập Google (thiếu GOOGLE_CLIENT_ID trong backend/secrets.properties)");
+        }
+        GoogleTokenVerifier.GoogleProfile g = googleVerifier.verify(credential)
+                .orElseThrow(() -> ApiException.unauthorized("Không xác thực được tài khoản Google, vui lòng thử lại"));
+        User user = userRepository.findByEmailIgnoreCase(g.email()).orElse(null);
+        if (user == null) {
+            user = new User();
+            String name = g.name() == null || g.name().isBlank() ? g.email().substring(0, g.email().indexOf('@')) : g.name().trim();
+            user.setFullName(name.length() > 100 ? name.substring(0, 100) : name);
+            user.setEmail(g.email());
+            byte[] random = new byte[32];
+            new SecureRandom().nextBytes(random);
+            user.setPasswordHash(passwordEncoder.encode(Base64.getEncoder().encodeToString(random)));
+            user.setRole(Role.CUSTOMER);   // đăng nhập Google lần đầu luôn là khách hàng
+            userRepository.save(user);
+        } else if (!user.isEnabled()) {
+            throw ApiException.forbidden("Tài khoản đã bị khóa, vui lòng liên hệ cửa hàng");
+        }
+        user.setEmailVerified(true);       // Google đã xác minh email này
+        if (user.getAvatarUrl() == null && g.picture() != null && g.picture().length() <= 500) user.setAvatarUrl(g.picture());
+        loginAttempts.recordSuccess(g.email());
+        return buildResponse(user);
+    }
+
+    public java.util.Map<String, Object> googleConfig() {
+        return googleVerifier.isEnabled()
+                ? java.util.Map.of("enabled", true, "clientId", googleVerifier.clientId())
+                : java.util.Map.of("enabled", false);
     }
 
     /** ip: địa chỉ của trình duyệt, dùng để chặn dò mật khẩu (xem LoginAttemptService). */

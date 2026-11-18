@@ -42,6 +42,8 @@ export function AuthProvider({ children }) {
 
   const login = useCallback((email, password) => authApi.login(email, password).then(handleAuth), [handleAuth]);
   const register = useCallback((data) => authApi.register(data).then(handleAuth), [handleAuth]);
+  /** credential = ID token từ nút Đăng nhập với Google */
+  const loginWithGoogle = useCallback((credential) => authApi.google(credential).then(handleAuth), [handleAuth]);
   const logout = useCallback(() => {
     tokenStorage.clear();
     setUser(null);
@@ -55,10 +57,11 @@ export function AuthProvider({ children }) {
     initializing,
     login,
     register,
+    loginWithGoogle,
     logout,
     /** Cập nhật thông tin hiển thị sau khi sửa hồ sơ (không cần đăng nhập lại). */
     updateUser: setUser,
-  }), [user, initializing, login, register, logout]);
+  }), [user, initializing, login, register, loginWithGoogle, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

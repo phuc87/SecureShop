@@ -37,6 +37,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByStatus(OrderStatus status);
 
+    /** Khách đã dùng mã này bao nhiêu lần (không tính đơn đã huỷ). */
+    long countByUserIdAndVoucherIdAndStatusNot(Long userId, Long voucherId, OrderStatus status);
+
+    long countByVoucherId(Long voucherId);
+
     @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
     List<Object[]> countGroupByStatus();
 

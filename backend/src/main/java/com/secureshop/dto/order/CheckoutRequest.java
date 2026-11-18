@@ -26,7 +26,8 @@ public record CheckoutRequest(
         String receiverEmail,
 
         @NotBlank(message = "Vui lòng nhập Tỉnh / Thành phố") @Size(max = 100) String province,
-        @NotBlank(message = "Vui lòng nhập Quận / Huyện") @Size(max = 100) String district,
+        // Từ 01/07/2025 chính quyền địa phương 2 cấp (Tỉnh -> Phường/Xã): Quận/Huyện không bắt buộc
+        @Size(max = 100) String district,
         @NotBlank(message = "Vui lòng nhập Phường / Xã") @Size(max = 100) String ward,
         @NotBlank(message = "Vui lòng nhập số nhà, tên đường") @Size(max = 255) String street,
 
@@ -35,7 +36,10 @@ public record CheckoutRequest(
         @NotNull(message = "Vui lòng chọn phương thức thanh toán") PaymentMethod paymentMethod,
 
         /** Lưu địa chỉ này làm mặc định cho lần sau. */
-        boolean saveAddress
+        boolean saveAddress,
+
+        /** Mã giảm giá (không bắt buộc). */
+        @Size(max = 30, message = "Mã giảm giá tối đa 30 ký tự") String voucherCode
 ) {
     public record Item(
             @NotNull(message = "Thiếu mã sản phẩm") Long productId,

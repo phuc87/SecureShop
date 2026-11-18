@@ -49,8 +49,13 @@ public class Address {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /** "268 Lý Thường Kiệt, Phường 12, Quận 10, TP. Hồ Chí Minh" */
+    /** "268 Lý Thường Kiệt, Phường Diên Hồng, TP. Hồ Chí Minh" (bỏ qua phần để trống, vd. không có Quận/Huyện) */
     public String fullAddress() {
-        return String.join(", ", street, ward, district, province);
+        return join(street, ward, district, province);
+    }
+
+    public static String join(String... parts) {
+        return java.util.Arrays.stream(parts).filter(p -> p != null && !p.isBlank()).map(String::trim)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 }

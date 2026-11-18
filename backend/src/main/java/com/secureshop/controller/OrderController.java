@@ -28,6 +28,7 @@ public class OrderController {
 
     private final OrderService orderService;
     private final ReviewService reviewService;
+    private final com.secureshop.service.VoucherService voucherService;
 
     /** Đặt hàng. Trả về chi tiết đơn vừa tạo (có mã đơn). */
     @PostMapping
@@ -82,5 +83,14 @@ public class OrderController {
     @GetMapping("/{id}/reviewed-products")
     public List<Long> reviewedProducts(@AuthenticationPrincipal UserPrincipal me, @PathVariable Long id) {
         return reviewService.reviewedInOrder(me.id(), id);
+    }
+
+    // ============================ MÃ GIẢM GIÁ ============================
+
+    /** POST /api/orders/voucher-quote { code, items } : áp thử mã, trả về số tiền giảm và tổng mới. */
+    @PostMapping("/voucher-quote")
+    public com.secureshop.dto.voucher.VoucherDtos.VoucherQuote voucherQuote(
+            @AuthenticationPrincipal UserPrincipal me, @Valid @RequestBody com.secureshop.dto.voucher.VoucherDtos.QuoteRequest req) {
+        return voucherService.quote(me.id(), req);
     }
 }

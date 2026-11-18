@@ -90,6 +90,12 @@ app:
   order:
     free-shipping-from: 2000000      # miễn phí giao hàng từ 2 triệu
     shipping-fee: 30000
+  # ===== Đăng nhập bằng Google =====
+  # Tạo "OAuth Client ID" (loại Web) tại https://console.cloud.google.com/apis/credentials
+  # rồi điền GOOGLE_CLIENT_ID trong backend/secrets.properties. Để trống = ẩn nút Google.
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+    jwks-url: https://www.googleapis.com/oauth2/v3/certs
   # ===== Trợ lý AI (ai-service Python, chạy bằng start-ai.bat) =====
   ai:
     url: ${AI_URL:http://127.0.0.1:8000}

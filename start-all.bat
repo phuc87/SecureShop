@@ -7,6 +7,16 @@ echo  Se mo 4 cua so: MySQL, Tro ly AI, Backend, Frontend. DUNG DONG chung.
 echo ============================================================
 echo.
 
+sc query MySQL80 2>nul | findstr /C:"RUNNING" >nul
+if not errorlevel 1 (
+  echo.
+  echo [LOI] Dich vu "MySQL80" ^(MySQL Server 8.0^) dang chay va chiem cong 3306.
+  echo       SecureShop can MySQL cua XAMPP. Hay bam dup file: dung-mysql80-bat-xampp.bat
+  echo       ^(bam Yes khi Windows hoi^), xong chay lai file nay.
+  echo.
+  pause
+  exit /b 1
+)
 echo [1/3] Kiem tra MySQL (XAMPP, cong 3306)...
 netstat -ano | findstr /R /C:":3306 .*LISTENING" >nul
 if not errorlevel 1 (

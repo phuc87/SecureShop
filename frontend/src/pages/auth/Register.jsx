@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import GoogleButton from '../../components/auth/GoogleButton';
 
 const EMPTY = { fullName: '', email: '', phone: '', password: '', confirmPassword: '' };
 
@@ -78,6 +79,7 @@ export default function Register() {
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? 'Đang tạo tài khoản...' : 'Đăng ký'}
         </button>
+        <GoogleButton text="signup_with" />
         <p className="auth-switch">Đã có tài khoản? <Link to="/login" state={location.state}>Đăng nhập</Link></p>
       </form>
     </div>

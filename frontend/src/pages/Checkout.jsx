@@ -7,6 +7,8 @@ import useCartSync from '../hooks/useCartSync';
 import { useToast } from '../context/ToastContext';
 import ProductImage from '../components/common/ProductImage';
 import CartNotices from '../components/common/CartNotices';
+import VoucherBox from '../components/order/VoucherBox';
+import AddressMap from '../components/order/AddressMap';
 import Icon from '../components/common/Icon';
 import { EmptyState } from '../components/common/StateViews';
 import { formatCurrency } from '../utils/format';
@@ -24,7 +26,6 @@ function validate(f) {
   if (!/^0\d{9}$/.test(f.receiverPhone)) e.receiverPhone = 'Số điện thoại gồm 10 số, bắt đầu bằng 0';
   if (!/^\S+@\S+\.\S+$/.test(f.receiverEmail)) e.receiverEmail = 'Email không hợp lệ';
   if (!f.province.trim()) e.province = 'Vui lòng nhập Tỉnh / Thành phố';
-  if (!f.district.trim()) e.district = 'Vui lòng nhập Quận / Huyện';
   if (!f.ward.trim()) e.ward = 'Vui lòng nhập Phường / Xã';
   if (!f.street.trim()) e.street = 'Vui lòng nhập số nhà, tên đường';
   return e;
@@ -32,7 +33,7 @@ function validate(f) {
 
 export default function Checkout() {
   const { user } = useAuth();
-  const { available: items, hasUnavailable, subtotal, removeItems } = useCart();
+  const { items: cartItems, available, selected: items, selectedSubtotal: subtotal, removeItems, updateQty, toggleSelect } = useCart();
   const { notices, syncing, resync, dismiss } = useCartSync();
   const toast = useToast();
   const navigate = useNavigate();
@@ -43,6 +44,8 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [voucher, setVoucher] = useState(null); // kết quả áp mã do server tính: { code, discount, ... }
 
   // Điền sẵn địa chỉ đã lưu lần trước
   useEffect(() => {
@@ -54,16 +57,24 @@ export default function Checkout() {
   if (items.length === 0) {
     return (
       <div className="container page">
-        <EmptyState title="Giỏ hàng đang trống">
-          <span>{hasUnavailable ? 'Các sản phẩm trong giỏ đã hết hàng hoặc ngừng bán.' : 'Hãy chọn sản phẩm trước khi thanh toán.'}</span>
-          <Link to="/products" className="btn btn-primary">Xem sản phẩm</Link>
-        </EmptyState>
+        {available.length > 0 ? (
+          <EmptyState title="Bạn chưa chọn sản phẩm nào">
+            <span>Hãy tick chọn sản phẩm muốn mua trong giỏ hàng rồi bấm thanh toán.</span>
+            <Link to="/cart" className="btn btn-primary">Chọn sản phẩm trong giỏ</Link>
+          </EmptyState>
+        ) : (
+          <EmptyState title="Giỏ hàng đang trống">
+            <span>{cartItems.length ? 'Các sản phẩm trong giỏ đã hết hàng hoặc ngừng bán.' : 'Hãy chọn sản phẩm trước khi thanh toán.'}</span>
+            <Link to="/products" className="btn btn-primary">Xem sản phẩm</Link>
+          </EmptyState>
+        )}
       </div>
     );
   }
 
-  const shipping = shippingFeeFor(subtotal);
-  const total = subtotal + shipping;
+  const shipping = shippingFeeFor(subtotal); // miễn phí ship tính theo tiền hàng trước khi giảm
+  const discount = voucher ? Number(voucher.discount) : 0;
+  const total = subtotal - discount + shipping;
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -82,7 +93,9 @@ export default function Checkout() {
     }
     setSubmitting(true);
     try {
-      const order = await orderApi.checkout({ ...form, items: items.map((i) => ({ productId: i.id, quantity: i.qty })) });
+      const order = await orderApi.checkout({
+        ...form, voucherCode: voucher?.code || null, items: items.map((i) => ({ productId: i.id, quantity: i.qty })),
+      });
       removeItems(items.map((i) => i.id)); // giữ lại món hết hàng/ngừng bán để khách tự xem
       toast.success(`Đặt hàng thành công! Mã đơn ${order.orderCode}`);
       navigate(`/account/orders/${order.id}`, { replace: true, state: { justPlaced: true } });
@@ -90,17 +103,32 @@ export default function Checkout() {
       setServerError(err.message);
       setErrors(err.errors || {});
       setSubmitting(false);
+      if (/^Mã |mã /.test(err.message)) setVoucher(null); // mã vừa hết lượt/hết hạn trong lúc đặt
       if (err.status === 400 || err.status === 409) resync(); // có thể vừa hết hàng / đổi giá -> cập nhật giỏ
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  const field = (name, label, props = {}) => (
+  // Chọn trên bản đồ -> điền các ô địa chỉ (ô nào bản đồ không đọc được thì giữ nguyên để khách tự nhập)
+  const fillFromMap = (addr) => {
+    setForm((f) => ({
+      ...f,
+      province: addr.province || f.province,
+      district: addr.district || f.district,
+      ward: addr.ward || f.ward,
+      street: addr.street || f.street,
+    }));
+    setErrors((er) => ({ ...er, province: undefined, district: undefined, ward: undefined, street: undefined }));
+  };
+
+  const field = (name, label, props = {}, hint = '') => (
     <label className="field" htmlFor={`co-${name}`}>
       <span>{label}</span>
       <input id={`co-${name}`} name={name} className={`input ${errors[name] ? 'input-error' : ''}`}
-             value={form[name]} onChange={onChange} aria-invalid={!!errors[name]} {...props} />
-      {errors[name] && <small className="field-error">{errors[name]}</small>}
+             value={form[name]} onChange={onChange} aria-invalid={!!errors[name]}
+             aria-describedby={hint ? `co-${name}-hint` : undefined} {...props} />
+      {errors[name] ? <small className="field-error">{errors[name]}</small>
+        : hint && <small id={`co-${name}-hint`} className="field-hint">{hint}</small>}
     </label>
   );
 
@@ -111,8 +139,10 @@ export default function Checkout() {
       </nav>
       <h1>Thanh toán</h1>
       <CartNotices notices={notices} onDismiss={dismiss} />
-      {hasUnavailable && (
-        <div className="alert alert-info">Một số sản phẩm trong giỏ đã hết hàng hoặc ngừng bán nên không có trong đơn này. <Link to="/cart">Xem giỏ hàng</Link></div>
+      {cartItems.length > items.length && (
+        <div className="alert alert-info">
+          Đơn này gồm {items.length} sản phẩm bạn đã chọn. {cartItems.length - items.length} sản phẩm khác vẫn được giữ trong giỏ hàng. <Link to="/cart">Chọn lại</Link>
+        </div>
       )}
       {serverError && <div className="alert alert-error" role="alert">{serverError} {serverError.includes('giỏ hàng') && <Link to="/cart">Về giỏ hàng</Link>}</div>}
 
@@ -128,11 +158,18 @@ export default function Checkout() {
           </section>
 
           <section className="panel" aria-labelledby="co-step2">
-            <h2 id="co-step2"><span className="step-badge">2</span> Địa chỉ giao hàng</h2>
+            <div className="step-head">
+              <h2 id="co-step2"><span className="step-badge">2</span> Địa chỉ giao hàng</h2>
+              <button type="button" className={`btn btn-sm ${showMap ? 'btn-primary' : 'btn-outline'} map-toggle`}
+                      onClick={() => setShowMap((s) => !s)} aria-expanded={showMap}>
+                <Icon name="mapPin" size={16} /> {showMap ? 'Ẩn bản đồ' : 'Chọn trên bản đồ'}
+              </button>
+            </div>
+            {showMap && <AddressMap onPick={fillFromMap} />}
             <div className="form-grid cols-3">
               {field('province', 'Tỉnh / Thành phố *', { autoComplete: 'address-level1', placeholder: 'TP. Hồ Chí Minh' })}
-              {field('district', 'Quận / Huyện *', { autoComplete: 'address-level2', placeholder: 'Quận 10' })}
-              {field('ward', 'Phường / Xã *', { autoComplete: 'address-level3', placeholder: 'Phường 12' })}
+              {field('district', 'Quận / Huyện (không bắt buộc)', { autoComplete: 'address-level2', placeholder: 'Có thể bỏ trống' })}
+              {field('ward', 'Phường / Xã *', { autoComplete: 'address-level3', placeholder: 'Phường Diên Hồng' })}
             </div>
             {field('street', 'Số nhà, tên đường *', { autoComplete: 'street-address', placeholder: '268 Lý Thường Kiệt' })}
             <label className="field" htmlFor="co-note">
@@ -161,25 +198,49 @@ export default function Checkout() {
         </div>
 
         <aside className="checkout-summary panel" aria-label="Tóm tắt đơn hàng">
-          <h2>Đơn hàng ({items.reduce((n, i) => n + i.qty, 0)} sản phẩm)</h2>
+          <div className="summary-head">
+            <h2>Đơn hàng <small>({items.reduce((n, i) => n + i.qty, 0)} sản phẩm)</small></h2>
+            <Link to="/cart" className="link-btn">Sửa giỏ hàng</Link>
+          </div>
           <ul className="summary-items">
             {items.map((i) => (
-              <li key={i.id}>
-                <span className="summary-thumb">
+              <li key={i.id} className="summary-item">
+                <Link to={`/products/${i.slug}`} className="summary-thumb" tabIndex={-1} aria-hidden="true">
                   <ProductImage src={i.thumbnailUrl} alt="" categoryName={i.categoryName} iconSize={22} />
-                  <span className="summary-qty">{i.qty}</span>
-                </span>
-                <span className="summary-name">{i.name}</span>
-                <b>{formatCurrency(Number(i.effectivePrice) * i.qty)}</b>
+                </Link>
+                <div className="summary-info">
+                  <Link to={`/products/${i.slug}`} className="summary-name">{i.name}</Link>
+                  <small className="muted">{formatCurrency(i.effectivePrice)} / cái</small>
+                  <div className="summary-row">
+                    <div className="qty-stepper qty-sm" role="group" aria-label={`Số lượng ${i.name}`}>
+                      <button type="button" onClick={() => updateQty(i.id, i.qty - 1)} disabled={i.qty <= 1} aria-label="Giảm 1">−</button>
+                      <input type="number" min="1" max={i.stock} value={i.qty} aria-label="Số lượng"
+                             onChange={(e) => updateQty(i.id, Number(e.target.value) || 1)} />
+                      <button type="button" onClick={() => updateQty(i.id, i.qty + 1)} disabled={i.qty >= i.stock} aria-label="Tăng 1">+</button>
+                    </div>
+                    <b className="summary-line">{formatCurrency(Number(i.effectivePrice) * i.qty)}</b>
+                  </div>
+                  {i.qty >= i.stock && <small className="summary-stock">Chỉ còn {i.stock} sản phẩm</small>}
+                </div>
+                <button type="button" className="summary-remove" onClick={() => toggleSelect(i.id, false)}
+                        aria-label={`Bỏ ${i.name} khỏi đơn này`} title="Bỏ khỏi đơn này (vẫn giữ trong giỏ hàng)">
+                  <Icon name="close" size={16} />
+                </button>
               </li>
             ))}
           </ul>
+          <VoucherBox items={items} applied={voucher} onChange={setVoucher} />
           <dl className="summary-totals">
             <div><dt>Tạm tính</dt><dd>{formatCurrency(subtotal)}</dd></div>
+            {discount > 0 && (
+              <div className="summary-discount"><dt>Giảm giá ({voucher.code})</dt><dd>-{formatCurrency(discount)}</dd></div>
+            )}
             <div><dt>Phí giao hàng</dt><dd>{shipping === 0 ? 'Miễn phí' : formatCurrency(shipping)}</dd></div>
             <div className="summary-total"><dt>Tổng cộng</dt><dd>{formatCurrency(total)}</dd></div>
           </dl>
-          {shipping > 0 && <p className="muted small">Mua thêm {formatCurrency(FREE_SHIPPING_FROM - subtotal)} để được miễn phí giao hàng.</p>}
+          {shipping > 0 && (
+            <p className="summary-ship"><Icon name="truck" size={16} /><span>Mua thêm <b>{formatCurrency(FREE_SHIPPING_FROM - subtotal)}</b> để được miễn phí giao hàng.</span></p>
+          )}
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={submitting || syncing}>
             {submitting ? 'Đang đặt hàng...' : syncing ? 'Đang cập nhật giá...' : `Đặt hàng · ${formatCurrency(total)}`}
           </button>

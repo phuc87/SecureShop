@@ -6,6 +6,8 @@ import { formatCurrency } from '../utils/format';
  * Giỏ hàng lưu trong localStorage (dùng được cả khi chưa đăng nhập).
  * Vì lưu ở trình duyệt nên giá/tồn kho có thể đã cũ -> trang Giỏ hàng và Thanh toán gọi syncWithServer()
  * để lấy số liệu mới nhất. Sản phẩm ngừng bán/hết hàng được đánh dấu unavailable và không tính tiền.
+ * Khách tick chọn món nào thì chỉ món đó sang trang thanh toán: món bỏ chọn có cờ unchecked = true
+ * (không có cờ = đang chọn, nên giỏ cũ và món mới thêm vào mặc định được chọn).
  */
 const CART_KEY = 'secureshop_cart';
 const CartContext = createContext(null);
@@ -54,7 +56,7 @@ export function CartProvider({ children }) {
     setItems((prev) => {
       if (prev.some((i) => i.id === product.id)) {
         return prev.map((i) => (i.id === product.id
-          ? { ...i, qty: finalQty, stock: product.stock, price: product.price, effectivePrice: product.effectivePrice, unavailable: undefined }
+          ? { ...i, qty: finalQty, stock: product.stock, price: product.price, effectivePrice: product.effectivePrice, unavailable: undefined, unchecked: undefined }
           : i));
       }
       return [...prev, {
@@ -80,6 +82,19 @@ export function CartProvider({ children }) {
   /** Xoá nhiều sản phẩm (vd. các món vừa đặt hàng xong), giữ lại món chưa mua được. */
   const removeItems = useCallback((ids) => setItems((prev) => prev.filter((i) => !ids.includes(i.id))), []);
   const clear = useCallback(() => setItems([]), []);
+
+  /** Tick / bỏ tick 1 món. */
+  const toggleSelect = useCallback((id, on) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, unchecked: on ? undefined : true } : i)));
+  }, []);
+  /** Chọn tất cả / bỏ chọn tất cả. */
+  const selectAll = useCallback((on) => {
+    setItems((prev) => prev.map((i) => ({ ...i, unchecked: on ? undefined : true })));
+  }, []);
+  /** Chỉ chọn đúng 1 món (nút "Mua ngay": thanh toán riêng món đó, các món khác vẫn nằm trong giỏ). */
+  const selectOnly = useCallback((id) => {
+    setItems((prev) => prev.map((i) => ({ ...i, unchecked: i.id === id ? undefined : true })));
+  }, []);
 
   /**
    * Lấy giá, tồn kho, tên, ảnh mới nhất từ server.
@@ -116,20 +131,27 @@ export function CartProvider({ children }) {
 
   const value = useMemo(() => {
     const available = items.filter((i) => !i.unavailable);
+    const selected = available.filter((i) => !i.unchecked); // món sẽ được thanh toán
     return {
       items,
       available,
+      selected,
       hasUnavailable: available.length !== items.length,
       count: available.reduce((sum, i) => sum + i.qty, 0),
       subtotal: available.reduce((sum, i) => sum + Number(i.effectivePrice) * i.qty, 0),
+      selectedCount: selected.reduce((sum, i) => sum + i.qty, 0),
+      selectedSubtotal: selected.reduce((sum, i) => sum + Number(i.effectivePrice) * i.qty, 0),
       addItem,
       updateQty,
       removeItem,
       removeItems,
       clear,
+      toggleSelect,
+      selectAll,
+      selectOnly,
       syncWithServer,
     };
-  }, [items, addItem, updateQty, removeItem, removeItems, clear, syncWithServer]);
+  }, [items, addItem, updateQty, removeItem, removeItems, clear, toggleSelect, selectAll, selectOnly, syncWithServer]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

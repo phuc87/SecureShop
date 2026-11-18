@@ -59,6 +59,14 @@ public class Order {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal discount = BigDecimal.ZERO;
 
+    /** Mã giảm giá đã dùng (V7). Lưu cả chữ vì mã có thể bị sửa/xoá sau này. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voucher_id")
+    private Voucher voucher;
+
+    @Column(length = 30)
+    private String voucherCode;
+
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal total;
 

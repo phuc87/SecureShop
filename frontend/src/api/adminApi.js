@@ -37,6 +37,13 @@ const adminApi = {
   updateBrand: (id, data) => axiosClient.put(`/admin/brands/${id}`, data),
   deleteBrand: (id) => axiosClient.delete(`/admin/brands/${id}`),
 
+  // ===== Mã giảm giá =====
+  vouchers: () => axiosClient.get('/admin/vouchers'),
+  createVoucher: (data) => axiosClient.post('/admin/vouchers', data),
+  updateVoucher: (id, data) => axiosClient.put(`/admin/vouchers/${id}`, data),
+  setVoucherActive: (id, active) => axiosClient.patch(`/admin/vouchers/${id}/active`, { active }),
+  deleteVoucher: (id) => axiosClient.delete(`/admin/vouchers/${id}`),
+
   // ===== Đánh giá =====
   deleteReview: (id) => axiosClient.delete(`/admin/reviews/${id}`),
 

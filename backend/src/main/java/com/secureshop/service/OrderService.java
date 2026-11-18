@@ -2,6 +2,7 @@ package com.secureshop.service;
 
 import com.secureshop.dto.PageResponse;
 import com.secureshop.dto.order.*;
+import com.secureshop.entity.Address;
 import com.secureshop.entity.*;
 import com.secureshop.entity.enums.*;
 import com.secureshop.exception.ApiException;
@@ -38,6 +39,7 @@ public class OrderService {
     private static final DateTimeFormatter CODE_DATE = DateTimeFormatter.ofPattern("yyMMdd");
 
     private final OrderRepository orderRepository;
+    private final VoucherService voucherService;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final AddressRepository addressRepository;
@@ -87,8 +89,7 @@ public class OrderService {
         order.setReceiverName(req.receiverName().trim());
         order.setReceiverPhone(req.receiverPhone().trim());
         order.setReceiverEmail(req.receiverEmail().trim().toLowerCase(Locale.ROOT));
-        order.setShippingAddress(String.join(", ", req.street().trim(), req.ward().trim(),
-                req.district().trim(), req.province().trim()));
+        order.setShippingAddress(Address.join(req.street(), req.ward(), req.district(), req.province()));
         order.setNote(req.note() == null || req.note().isBlank() ? null : req.note().trim());
         order.setPaymentMethod(req.paymentMethod());
 
@@ -111,11 +112,19 @@ public class OrderService {
             p.setStock(p.getStock() - qty);
             p.setSoldCount(p.getSoldCount() + qty);
         }
+        // Miễn phí ship tính theo tiền hàng TRƯỚC khi giảm giá
         BigDecimal fee = subtotal.compareTo(freeShippingFrom) >= 0 ? BigDecimal.ZERO : shippingFee;
+        BigDecimal discount = BigDecimal.ZERO;
+        if (req.voucherCode() != null && !req.voucherCode().isBlank()) {
+            VoucherService.Applied applied = voucherService.applyForOrder(req.voucherCode(), subtotal, me.id());
+            discount = applied.discount();
+            order.setVoucher(applied.voucher());
+            order.setVoucherCode(applied.voucher().getCode());
+        }
         order.setSubtotal(subtotal);
         order.setShippingFee(fee);
-        order.setDiscount(BigDecimal.ZERO);
-        order.setTotal(subtotal.add(fee));
+        order.setDiscount(discount);
+        order.setTotal(subtotal.subtract(discount).add(fee));
         order.addHistory(OrderStatusHistory.of(null, OrderStatus.PENDING, user, "Khách đặt hàng"));
 
         // Mã đơn dựa trên id -> không bao giờ trùng: lưu với mã tạm, có id rồi mới đặt mã thật
@@ -239,6 +248,7 @@ public class OrderService {
         OrderStatus from = order.getStatus();
         if (target == OrderStatus.CANCELLED) {
             restock(order);
+            if (order.getVoucher() != null) voucherService.release(order.getVoucher().getId()); // trả lại lượt dùng mã
             order.setCancelReason(note);
         }
         if (target == OrderStatus.COMPLETED && order.getPaymentMethod() == PaymentMethod.COD) {
@@ -273,7 +283,7 @@ public class OrderService {
         a.setReceiverName(req.receiverName().trim());
         a.setReceiverPhone(req.receiverPhone().trim());
         a.setProvince(req.province().trim());
-        a.setDistrict(req.district().trim());
+        a.setDistrict(req.district() == null ? "" : req.district().trim()); // cột NOT NULL: để trống = chuỗi rỗng
         a.setWard(req.ward().trim());
         a.setStreet(req.street().trim());
         addressRepository.save(a);

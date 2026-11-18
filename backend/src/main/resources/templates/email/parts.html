@@ -35,6 +35,12 @@
         <td align="right" style="padding:10px 0 2px;white-space:nowrap;"
             th:text="${#numbers.formatDecimal(order.subtotal, 1, 'POINT', 0, 'COMMA')} + ' ₫'">0 ₫</td>
     </tr>
+    <tr th:if="${order.discount != null and order.discount.signum() > 0}">
+        <td colspan="2" align="right" style="padding:2px 8px 2px 0;color:#586977;"
+            th:text="'Giảm giá' + (${order.voucherCode} != null ? ' (' + ${order.voucherCode} + ')' : '')">Giảm giá</td>
+        <td align="right" style="padding:2px 0;white-space:nowrap;color:#1f8a4c;"
+            th:text="'-' + ${#numbers.formatDecimal(order.discount, 1, 'POINT', 0, 'COMMA')} + ' ₫'">-0 ₫</td>
+    </tr>
     <tr>
         <td colspan="2" align="right" style="padding:2px 8px 2px 0;color:#586977;">Phí giao hàng</td>
         <td align="right" style="padding:2px 0;white-space:nowrap;"

@@ -8,6 +8,8 @@ const productApi = {
   brands: () => axiosClient.get('/brands'),
   /** Giá/tồn kho mới nhất cho giỏ hàng. Sản phẩm ngừng bán sẽ không có trong kết quả. */
   byIds: (ids) => axiosClient.get('/products/by-ids', { params: { ids: ids.join(',') } }),
+  /** So sánh 2 sản phẩm + đề xuất nên chọn cái nào (server chấm điểm). */
+  compare: (slugs) => axiosClient.get('/products/compare', { params: { slugs: slugs.join(',') } }),
   reviews: (slug, page = 0, size = 5) => axiosClient.get(`/products/${encodeURIComponent(slug)}/reviews`, { params: { page, size } }),
 };
 

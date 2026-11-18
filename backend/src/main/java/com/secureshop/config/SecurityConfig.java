@@ -49,7 +49,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // 1. Ai cũng dùng được (khách vãng lai)
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/forgot-password",
-                                "/api/auth/reset-password", "/api/auth/reset-password/check").permitAll()
+                                "/api/auth/reset-password", "/api/auth/reset-password/check",
+                                "/api/auth/google", "/api/auth/google/config").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/brands/**",
                                 "/api/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()

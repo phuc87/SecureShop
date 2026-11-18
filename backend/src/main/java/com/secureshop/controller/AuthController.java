@@ -25,6 +25,21 @@ public class AuthController {
         return authService.register(request);
     }
 
+    public record GoogleLoginRequest(@jakarta.validation.constraints.NotBlank(message = "Thiếu mã xác thực Google") String credential) {
+    }
+
+    /** Có bật đăng nhập Google không + Client ID để hiện nút (Client ID không phải bí mật). */
+    @GetMapping("/google/config")
+    public java.util.Map<String, Object> googleConfig() {
+        return authService.googleConfig();
+    }
+
+    /** POST /api/auth/google { credential } -> giống đăng nhập thường (token + user) */
+    @PostMapping("/google")
+    public AuthResponse google(@Valid @RequestBody GoogleLoginRequest request) {
+        return authService.loginWithGoogle(request.credential());
+    }
+
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletRequest http) {
         return authService.login(request, com.secureshop.util.ClientIp.of(http));
