@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!--/* Các phần dùng chung cho email (CSS viết inline vì nhiều trình đọc email không hỗ trợ <style>). */-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<body>
+
+<!--/* ===== Đầu email ===== */-->
+<tr th:fragment="header">
+    <td style="background:#0c1a33;padding:18px 24px;">
+        <span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:8px;background:#0b4fc4;color:#ffffff;font-weight:bold;font-size:16px;">S</span>
+        <span style="color:#ffffff;font-size:20px;font-weight:bold;vertical-align:middle;margin-left:8px;"
+              th:text="${shopName}">SecureShop</span>
+    </td>
+</tr>
+
+<!--/* ===== Bảng sản phẩm + tổng tiền ===== */-->
+<table th:fragment="items" role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr>
+        <th align="left" style="padding:8px 0;border-bottom:2px solid #dde3ec;color:#586977;font-weight:600;">Sản phẩm</th>
+        <th align="center" style="padding:8px 4px;border-bottom:2px solid #dde3ec;color:#586977;font-weight:600;width:44px;">SL</th>
+        <th align="right" style="padding:8px 0;border-bottom:2px solid #dde3ec;color:#586977;font-weight:600;width:110px;">Thành tiền</th>
+    </tr>
+    <tr th:each="item : ${order.items}">
+        <td style="padding:10px 0;border-bottom:1px solid #eef1f5;">
+            <span th:text="${item.productName}">Tên sản phẩm</span><br>
+            <span style="color:#586977;font-size:12px;"
+                  th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'POINT', 0, 'COMMA')} + ' ₫ / cái'">0 ₫</span>
+        </td>
+        <td align="center" style="padding:10px 4px;border-bottom:1px solid #eef1f5;" th:text="${item.quantity}">1</td>
+        <td align="right" style="padding:10px 0;border-bottom:1px solid #eef1f5;white-space:nowrap;"
+            th:text="${#numbers.formatDecimal(item.lineTotal, 1, 'POINT', 0, 'COMMA')} + ' ₫'">0 ₫</td>
+    </tr>
+    <tr>
+        <td colspan="2" align="right" style="padding:10px 8px 2px 0;color:#586977;">Tạm tính</td>
+        <td align="right" style="padding:10px 0 2px;white-space:nowrap;"
+            th:text="${#numbers.formatDecimal(order.subtotal, 1, 'POINT', 0, 'COMMA')} + ' ₫'">0 ₫</td>
+    </tr>
+    <tr>
+        <td colspan="2" align="right" style="padding:2px 8px 2px 0;color:#586977;">Phí giao hàng</td>
+        <td align="right" style="padding:2px 0;white-space:nowrap;"
+            th:text="${order.shippingFee.signum() == 0} ? 'Miễn phí' : ${#numbers.formatDecimal(order.shippingFee, 1, 'POINT', 0, 'COMMA')} + ' ₫'">0 ₫</td>
+    </tr>
+    <tr>
+        <td colspan="2" align="right" style="padding:8px 8px 0 0;font-weight:bold;font-size:16px;">Tổng cộng</td>
+        <td align="right" style="padding:8px 0 0;font-weight:bold;font-size:16px;color:#e8590c;white-space:nowrap;"
+            th:text="${#numbers.formatDecimal(order.total, 1, 'POINT', 0, 'COMMA')} + ' ₫'">0 ₫</td>
+    </tr>
+</table>
+
+<!--/* ===== Thông tin giao hàng ===== */-->
+<table th:fragment="shipping" role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="background:#f6f8fb;border-radius:8px;font-size:14px;margin:8px 0 16px;">
+    <tr><td style="padding:14px 16px;line-height:1.6;">
+        <b>Giao đến:</b> <span th:text="${order.receiverName}">Tên</span> - <span th:text="${order.receiverPhone}">SĐT</span><br>
+        <span th:text="${order.shippingAddress}">Địa chỉ</span><br>
+        <b>Thanh toán:</b> <span th:text="${order.paymentMethodLabel}">COD</span>
+        <span th:if="${order.note != null}"><br><b>Ghi chú:</b> <span th:text="${order.note}">ghi chú</span></span>
+    </td></tr>
+</table>
+
+<!--/* ===== Nút bấm ===== */-->
+<table th:fragment="button(label)" role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px;">
+    <tr><td style="background:#0b4fc4;border-radius:8px;">
+        <a th:href="${orderUrl}" href="#" th:text="${label}"
+           style="display:inline-block;padding:12px 22px;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;">Xem đơn hàng</a>
+    </td></tr>
+</table>
+
+<!--/* ===== Chân email ===== */-->
+<tr th:fragment="footer">
+    <td style="padding:16px 24px;background:#f6f8fb;color:#586977;font-size:12px;line-height:1.6;border-top:1px solid #dde3ec;">
+        Cần hỗ trợ? Gọi hotline <b th:text="${hotline}">1900 1234</b> hoặc trả lời email này.<br>
+        Đây là email tự động từ <span th:text="${shopName}">SecureShop</span>.
+    </td>
+</tr>
+
+</body>
+</html>

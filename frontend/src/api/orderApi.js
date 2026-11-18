@@ -1,0 +1,18 @@
+import axiosClient from './axiosClient';
+
+/** Đơn hàng phía khách hàng. */
+const orderApi = {
+  /** payload: { items:[{productId, quantity}], receiverName, receiverPhone, receiverEmail,
+   *            province, district, ward, street, note, paymentMethod, saveAddress } */
+  checkout: (payload) => axiosClient.post('/orders', payload),
+  myOrders: (page = 0, size = 10) => axiosClient.get('/orders', { params: { page, size } }),
+  myOrder: (id) => axiosClient.get(`/orders/${id}`),
+  cancel: (id, reason) => axiosClient.post(`/orders/${id}/cancel`, { reason }),
+  defaultAddress: () => axiosClient.get('/orders/default-address'),
+  // ===== Đánh giá sản phẩm (chỉ khi đơn đã hoàn thành) =====
+  reviewEligibility: (productId) => axiosClient.get('/orders/review-eligibility', { params: { productId } }),
+  createReview: (payload) => axiosClient.post('/orders/reviews', payload),
+  reviewedProducts: (orderId) => axiosClient.get(`/orders/${orderId}/reviewed-products`),
+};
+
+export default orderApi;

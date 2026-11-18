@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lộ trình SecureShop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: mục lục dính bên trái + cột nội dung; mỗi giai đoạn là một khối có dải màu theo thứ tự. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #15212c;
+  --muted: #586977;
+  --line: #d5dce3;
+  --accent: #0b6a85;
+  --accent-soft: #e0eff3;
+  --warn: #a8530a;
+  --warn-soft: #fbefe0;
+  --ok: #217a4b;
+  --ok-soft: #e2f3e9;
+  --code-bg: #101b25;
+  --code-ink: #d9e6ee;
+  --font-display: "Lexend", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d141a; --surface: #141e27; --ink: #e3ebf1; --muted: #93a5b4; --line: #283642;
+    --accent: #52b9d6; --accent-soft: #11303a; --warn: #f0a75f; --warn-soft: #34250f;
+    --ok: #5fcf92; --ok-soft: #10301f; --code-bg: #091016; --code-ink: #d9e6ee;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d141a; --surface: #141e27; --ink: #e3ebf1; --muted: #93a5b4; --line: #283642;
+  --accent: #52b9d6; --accent-soft: #11303a; --warn: #f0a75f; --warn-soft: #34250f;
+  --ok: #5fcf92; --ok-soft: #10301f; --code-bg: #091016; --code-ink: #d9e6ee;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.shell {
+  display: grid; grid-template-columns: 1fr; gap: 32px;
+  max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px;
+}
+@media (min-width: 1000px) {
+  .shell { grid-template-columns: 230px minmax(0, 1fr); }
+  nav.toc { position: sticky; top: 24px; align-self: start; }
+}
+
+nav.toc { font-size: 14px; }
+nav.toc h2 { font-family: var(--font-display); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a {
+  display: flex; justify-content: space-between; gap: 8px; text-decoration: none; color: var(--ink);
+  padding: 6px 10px; border-radius: 6px; border-left: 3px solid transparent;
+}
+nav.toc a:hover { background: var(--accent-soft); border-left-color: var(--accent); }
+nav.toc .prog { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+main { min-width: 0; display: grid; gap: 40px; }
+header.hero h1 { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 0 0 12px; text-wrap: balance; }
+header.hero p { max-width: 68ch; margin: 0 0 10px; color: var(--muted); }
+.stack-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.chip b { color: var(--accent); font-weight: 600; }
+
+h2.sec { font-family: var(--font-display); font-size: 24px; margin: 0 0 6px; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-size: 17px; margin: 22px 0 8px; }
+p.lead { margin: 0 0 16px; color: var(--muted); max-width: 70ch; }
+
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 640px; color: var(--ink); font-family: var(--font-body); }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; max-width: 75ch; }
+svg .lbl { font-size: 12px; fill: currentColor; }
+svg .lbl-sm { font-size: 11px; fill: var(--muted); }
+svg .lbl-b { font-size: 13px; font-weight: 600; fill: currentColor; }
+svg .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+svg .box { fill: var(--surface); stroke: currentColor; stroke-width: 1.3; }
+svg .box-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6; }
+svg .grid { stroke: var(--line); stroke-width: 1; }
+svg .bar { fill: var(--accent); }
+svg .bar-warn { fill: var(--warn); }
+svg .edge { stroke: currentColor; stroke-width: 1.3; fill: none; }
+svg .edge-acc { stroke: var(--accent); stroke-width: 2.4; fill: none; }
+svg .life { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+svg .arrowfill { fill: currentColor; }
+svg .accfill { fill: var(--accent); }
+
+.why { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+.why div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: 14.5px; }
+.why b { display: block; font-family: var(--font-display); font-weight: 600; margin-bottom: 2px; }
+
+section.phase {
+  background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--accent);
+  border-radius: 10px; padding: 22px 24px; scroll-margin-top: 16px;
+}
+.phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; justify-content: space-between; }
+.phase-head h2 { font-family: var(--font-display); font-size: 22px; margin: 0; text-wrap: balance; }
+.phase-head h2 .num { color: var(--accent); margin-right: 6px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.pill { padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; white-space: nowrap; }
+.pill.prog { background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums; }
+.goal { margin: 10px 0 0; max-width: 72ch; }
+
+ul.tasks { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+ul.tasks li label { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+ul.tasks li label:hover { background: var(--bg); }
+ul.tasks input { margin-top: 5px; accent-color: var(--accent); width: 16px; height: 16px; }
+ul.tasks input:checked + span { color: var(--muted); text-decoration: line-through; }
+ul.tasks span small { display: block; color: var(--muted); font-size: 13.5px; }
+
+.callout { border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 14.5px; }
+.callout h4 { margin: 0 0 6px; font-family: var(--font-display); font-size: 14px; letter-spacing: .02em; }
+.callout ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.callout.done { background: var(--ok-soft); border-left: 4px solid var(--ok); }
+.callout.done h4 { color: var(--ok); }
+.callout.trap { background: var(--warn-soft); border-left: 4px solid var(--warn); }
+.callout.trap h4 { color: var(--warn); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+
+pre {
+  background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 14px 16px;
+  overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.55; margin: 8px 0 0;
+}
+code { font-family: var(--font-mono); font-size: .9em; }
+p code, li code, td code { background: var(--bg); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+pre .c { color: #7f98a8; }
+pre .k { color: #7fd0e8; }
+pre .s { color: #e8c58a; }
+
+.tablewrap { overflow-x: auto; margin-top: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-display); font-weight: 600; font-size: 13px; color: var(--muted); background: var(--bg); }
+td:first-child { white-space: nowrap; }
+
+ol.demo { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 6px; }
+ol.demo .who { font-weight: 600; color: var(--accent); }
+.foot { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="toc" aria-label="Mục lục">
+  <h2>Lộ trình</h2>
+  <ol>
+    <li><a href="#tong-quan"><span>Tổng quan &amp; thứ tự</span></a></li>
+    <li><a href="#gd0"><span>0 · Chuẩn bị + thử video</span><span class="prog" data-prog="gd0"></span></a></li>
+    <li><a href="#gd1"><span>1 · Phân tích thiết kế</span><span class="prog" data-prog="gd1"></span></a></li>
+    <li><a href="#gd2"><span>2 · Backend + đăng nhập</span><span class="prog" data-prog="gd2"></span></a></li>
+    <li><a href="#gd3"><span>3 · Cửa hàng</span><span class="prog" data-prog="gd3"></span></a></li>
+    <li><a href="#gd4"><span>4 · Chat realtime</span><span class="prog" data-prog="gd4"></span></a></li>
+    <li><a href="#gd5"><span>5 · Gọi video</span><span class="prog" data-prog="gd5"></span></a></li>
+    <li><a href="#gd6"><span>6 · Trợ lý AI</span><span class="prog" data-prog="gd6"></span></a></li>
+    <li><a href="#gd7"><span>7 · Dashboard, deploy, báo cáo</span><span class="prog" data-prog="gd7"></span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="hero" id="tong-quan">
+  <h1>Lộ trình xây dựng SecureShop</h1>
+  <p>Website bán thiết bị an ninh có trợ lý tư vấn AI, có chat và gọi video giữa khách hàng và admin trên 2 laptop khác nhau. Kế hoạch gồm 8 giai đoạn trong khoảng 12 tuần, xếp theo thứ tự phụ thuộc: phần nào là nền cho phần sau thì làm trước.</p>
+  <p>Mỗi việc có ô đánh dấu để bạn theo dõi tiến độ. Trạng thái được lưu trong trình duyệt của bạn.</p>
+  <div class="stack-chips">
+    <span class="chip"><b>Frontend</b> React + Vite</span>
+    <span class="chip"><b>Backend</b> Node.js + Express</span>
+    <span class="chip"><b>CSDL</b> MongoDB (Mongoose)</span>
+    <span class="chip"><b>Realtime</b> Socket.IO</span>
+    <span class="chip"><b>Video</b> WebRTC</span>
+    <span class="chip"><b>AI</b> LLM API qua backend</span>
+    <span class="chip"><b>Ảnh</b> Cloudinary</span>
+  </div>
+</header>
+
+<section aria-labelledby="h-gantt">
+  <h2 class="sec" id="h-gantt">Làm gì trước, làm gì sau</h2>
+  <p class="lead">Thanh màu cam là phần rủi ro cao nhất (gọi video giữa 2 máy). Phần này được thử ngay từ tuần 1 bằng một bản demo nhỏ, để nếu mạng hoặc HTTPS có vấn đề thì bạn biết sớm.</p>
+  <figure>
+    <svg viewBox="0 0 960 360" role="img" aria-label="Biểu đồ Gantt 8 giai đoạn trong 12 tuần: chuẩn bị tuần 1, thiết kế tuần 1-2, backend tuần 2-3, cửa hàng tuần 3-5, chat tuần 5-6, video tuần 7-8, AI tuần 8-10, hoàn thiện tuần 10-12">
+      <!-- cột tuần: x = 260 + (w-1)*56 -->
+      <g>
+        <line class="grid" x1="260" y1="28" x2="260" y2="340"/>
+        <line class="grid" x1="316" y1="28" x2="316" y2="340"/>
+        <line class="grid" x1="372" y1="28" x2="372" y2="340"/>
+        <line class="grid" x1="428" y1="28" x2="428" y2="340"/>
+        <line class="grid" x1="484" y1="28" x2="484" y2="340"/>
+        <line class="grid" x1="540" y1="28" x2="540" y2="340"/>
+        <line class="grid" x1="596" y1="28" x2="596" y2="340"/>
+        <line class="grid" x1="652" y1="28" x2="652" y2="340"/>
+        <line class="grid" x1="708" y1="28" x2="708" y2="340"/>
+        <line class="grid" x1="764" y1="28" x2="764" y2="340"/>
+        <line class="grid" x1="820" y1="28" x2="820" y2="340"/>
+        <line class="grid" x1="876" y1="28" x2="876" y2="340"/>
+        <line class="grid" x1="932" y1="28" x2="932" y2="340"/>
+      </g>
+      <g class="lbl-sm" text-anchor="middle">
+        <text x="288" y="20">T1</text><text x="344" y="20">T2</text><text x="400" y="20">T3</text>
+        <text x="456" y="20">T4</text><text x="512" y="20">T5</text><text x="568" y="20">T6</text>
+        <text x="624" y="20">T7</text><text x="680" y="20">T8</text><text x="736" y="20">T9</text>
+        <text x="792" y="20">T10</text><text x="848" y="20">T11</text><text x="904" y="20">T12</text>
+      </g>
+      <g class="lbl">
+        <text x="0" y="57">0 · Chuẩn bị + thử video 2 máy</text>
+        <text x="0" y="95">1 · Phân tích &amp; thiết kế</text>
+        <text x="0" y="133">2 · Backend nền + đăng nhập</text>
+        <text x="0" y="171">3 · Cửa hàng (SP, giỏ, đơn)</text>
+        <text x="0" y="209">4 · Chat realtime</text>
+        <text x="0" y="247">5 · Gọi video WebRTC</text>
+        <text x="0" y="285">6 · Trợ lý AI tư vấn</text>
+        <text x="0" y="323">7 · Dashboard, deploy, báo cáo</text>
+      </g>
+      <rect class="bar-warn" x="264" y="42" width="48" height="22" rx="4"/>
+      <rect class="bar" x="264" y="80" width="104" height="22" rx="4"/>
+      <rect class="bar" x="320" y="118" width="104" height="22" rx="4"/>
+      <rect class="bar" x="376" y="156" width="160" height="22" rx="4"/>
+      <rect class="bar" x="488" y="194" width="104" height="22" rx="4"/>
+      <rect class="bar-warn" x="600" y="232" width="104" height="22" rx="4"/>
+      <rect class="bar" x="656" y="270" width="160" height="22" rx="4"/>
+      <rect class="bar" x="768" y="308" width="160" height="22" rx="4"/>
+    </svg>
+    <figcaption>Các giai đoạn gối lên nhau có chủ đích: thiết kế xong phần nào thì code phần đó luôn. AI (giai đoạn 6) có thể bắt đầu khi video còn đang hoàn thiện, vì hai phần này không phụ thuộc nhau.</figcaption>
+  </figure>
+
+  <h3>Vì sao thứ tự này: phần nào cần phần nào</h3>
+  <figure>
+    <svg viewBox="0 0 900 300" role="img" aria-label="Sơ đồ phụ thuộc: CSDL và đăng nhập là nền cho sản phẩm và chat; sản phẩm cần cho giỏ hàng, AI và thẻ sản phẩm trong chat; chat cung cấp signaling cho video và kênh chuyển AI sang admin; cuối cùng là dashboard và deploy">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowfill"/>
+        </marker>
+      </defs>
+      <!-- cạnh -->
+      <path class="edge" d="M170,150 L250,64" marker-end="url(#ar)"/>
+      <path class="edge" d="M170,150 L250,236" marker-end="url(#ar)"/>
+      <path class="edge" d="M400,64 L490,44" marker-end="url(#ar)"/>
+      <path class="edge" d="M400,64 L490,150" marker-end="url(#ar)"/>
+      <path class="edge" d="M400,236 L490,150" marker-end="url(#ar)"/>
+      <path class="edge" d="M400,236 L490,256" marker-end="url(#ar)"/>
+      <path class="edge" d="M325,88 L325,212" marker-end="url(#ar)"/>
+      <path class="edge" d="M640,44 L730,150" marker-end="url(#ar)"/>
+      <path class="edge" d="M640,150 L730,150" marker-end="url(#ar)"/>
+      <path class="edge" d="M640,256 L730,150" marker-end="url(#ar)"/>
+      <!-- nhãn cạnh -->
+      <g class="lbl-sm halo">
+        <text x="196" y="96">role admin</text>
+        <text x="200" y="214">JWT</text>
+        <text x="420" y="44">productId</text>
+        <text x="420" y="100">dữ liệu tư vấn</text>
+        <text x="420" y="208">chuyển admin</text>
+        <text x="425" y="262">signaling</text>
+        <text x="332" y="154">thẻ SP</text>
+      </g>
+      <!-- nút -->
+      <rect class="box" x="20" y="126" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="95" y="155" text-anchor="middle">CSDL + Đăng nhập</text>
+      <rect class="box" x="250" y="40" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="325" y="69" text-anchor="middle">Sản phẩm</text>
+      <rect class="box" x="250" y="212" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="325" y="241" text-anchor="middle">Chat Socket.IO</text>
+      <rect class="box" x="490" y="20" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="565" y="49" text-anchor="middle">Giỏ hàng / Đơn</text>
+      <rect class="box" x="490" y="126" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="565" y="155" text-anchor="middle">Trợ lý AI</text>
+      <rect class="box-acc" x="490" y="232" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="565" y="261" text-anchor="middle">Video WebRTC</text>
+      <rect class="box" x="730" y="126" width="150" height="48" rx="8"/>
+      <text class="lbl-b" x="805" y="155" text-anchor="middle">Dashboard + Deploy</text>
+    </svg>
+    <figcaption>Mũi tên A → B nghĩa là B dùng thứ mà A tạo ra. Ví dụ gọi video dùng lại kết nối Socket.IO của chat để trao đổi tín hiệu (signaling), nên chat phải xong trước video.</figcaption>
+  </figure>
+  <div class="why">
+    <div><b>Đăng nhập trước tiên</b>Chat, đơn hàng và trang admin đều cần biết "ai đang gửi". Không có <code>user_id</code> và <code>role</code> thì không làm tiếp được.</div>
+    <div><b>Sản phẩm trước AI</b>AI chỉ tư vấn tốt khi có dữ liệu sản phẩm thật (giá, thông số) để tra. Không có dữ liệu thì AI sẽ bịa.</div>
+    <div><b>Chat trước video</b>Video WebRTC cần một kênh để hai máy trao đổi SDP và ICE. Kênh đó chính là Socket.IO bạn làm ở phần chat.</div>
+    <div><b>Thử video ngay tuần 1</b>Phần dễ hỏng nhất là HTTPS, camera và mạng giữa 2 laptop. Thử sớm bằng bản demo 100 dòng để khỏi bất ngờ ở tuần 8.</div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 0 ===================== -->
+<section class="phase" id="gd0" data-phase="gd0">
+  <div class="phase-head">
+    <h2><span class="num">0</span>Chuẩn bị môi trường + thử video 2 máy</h2>
+    <div class="meta"><span class="pill">Tuần 1</span><span class="pill prog" data-prog="gd0"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> cài đủ công cụ, tạo khung dự án, và chứng minh 2 laptop gọi video được cho nhau trước khi đầu tư vào phần còn lại.</p>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Cài Node.js 20 LTS, Git, VS Code, Postman; tạo tài khoản MongoDB Atlas (miễn phí) hoặc cài MongoDB Community</span></label></li>
+    <li><label><input type="checkbox"><span>Tạo repo Git với 2 thư mục <code>client/</code> và <code>server/</code>, file <code>.env.example</code>, <code>.gitignore</code> (bỏ <code>node_modules</code>, <code>.env</code>)</span></label></li>
+    <li><label><input type="checkbox"><span>Đăng ký các dịch vụ: ngrok (link HTTPS), Cloudinary (ảnh), khóa API của LLM, Metered.ca (TURN miễn phí)</span></label></li>
+    <li><label><input type="checkbox"><span>Viết bản thử video: 1 file <code>server.js</code> (Express + Socket.IO chuyển tiếp offer/answer/ICE) và 1 trang <code>index.html</code> có 2 thẻ <code>&lt;video&gt;</code><small>Chưa cần React, chưa cần đăng nhập. Chỉ cần thấy hình của nhau.</small></span></label></li>
+    <li><label><input type="checkbox"><span>Chạy <code>ngrok http 3000</code>, mở link <code>https://….ngrok-free.app</code> trên cả 2 laptop và gọi thử</span></label></li>
+    <li><label><input type="checkbox"><span>Thử lần 2 khi laptop B dùng 4G (phát từ điện thoại) để kiểm tra khi 2 máy khác mạng</span></label></li>
+  </ul>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Hai laptop nhìn và nghe thấy nhau qua link HTTPS.</li><li>Bạn biết có cần TURN hay không (khác mạng mà không thấy hình thì cần).</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul>
+      <li>Mở bằng <code>http://192.168.x.x</code> thì <code>navigator.mediaDevices</code> là <code>undefined</code>. Trình duyệt chỉ cho dùng camera trên HTTPS hoặc <code>localhost</code>.</li>
+      <li>Test bằng 2 tab trên cùng 1 máy: webcam có thể bị tab đầu chiếm. Hãy test trên 2 máy thật.</li>
+      <li>Windows Firewall hỏi quyền cho Node.js: chọn cho phép cả mạng Private.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 1 ===================== -->
+<section class="phase" id="gd1" data-phase="gd1">
+  <div class="phase-head">
+    <h2><span class="num">1</span>Phân tích &amp; thiết kế</h2>
+    <div class="meta"><span class="pill">Tuần 1–2</span><span class="pill prog" data-prog="gd1"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> chốt dữ liệu, API và màn hình trước khi code. Phần này sau đó trở thành chương 3 của báo cáo.</p>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Vẽ sơ đồ use case cho 3 tác nhân: Khách vãng lai, Khách hàng, Admin (Trợ lý AI là tác nhân hệ thống)</span></label></li>
+    <li><label><input type="checkbox"><span>Vẽ ERD theo bảng collection bên dưới (dùng draw.io hoặc dbdiagram.io)</span></label></li>
+    <li><label><input type="checkbox"><span>Wireframe 9 màn: Trang chủ, Danh sách SP, Chi tiết SP, Giỏ hàng, Thanh toán, Widget chat (AI + admin), Inbox admin, Màn hình cuộc gọi, Dashboard (dùng Figma hoặc vẽ tay)</span></label></li>
+    <li><label><input type="checkbox"><span>Viết đặc tả REST API và danh sách sự kiện Socket.IO</span></label></li>
+    <li><label><input type="checkbox"><span>Vẽ sơ đồ tuần tự cho 3 luồng: đặt hàng, gọi video, AI chuyển sang admin</span></label></li>
+  </ul>
+
+  <h3>Các collection chính (MongoDB)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Collection</th><th>Trường chính</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td>name, email, passwordHash, phone, role, isOnline</td><td><code>role</code>: <code>customer</code> | <code>admin</code></td></tr>
+      <tr><td><code>categories</code></td><td>name, slug</td><td>Camera, Khóa thông minh, Chuông cửa, Báo động, Đầu ghi…</td></tr>
+      <tr><td><code>products</code></td><td>name, slug, categoryId, brand, price, salePrice, stock, images[], specs{}, description</td><td><code>specs</code> linh hoạt theo loại thiết bị</td></tr>
+      <tr><td><code>carts</code></td><td>userId, items[{productId, qty}]</td><td>Khách chưa đăng nhập thì lưu giỏ trong localStorage</td></tr>
+      <tr><td><code>orders</code></td><td>userId, items[{productId, name, price, qty}], total, address, status, paymentMethod</td><td>Chép giá vào đơn tại thời điểm mua</td></tr>
+      <tr><td><code>conversations</code></td><td>customerId, adminId, status, lastMessageAt, unreadAdmin, aiSummary</td><td><code>status</code>: <code>ai</code> → <code>waiting</code> → <code>active</code> → <code>closed</code></td></tr>
+      <tr><td><code>messages</code></td><td>conversationId, senderId, senderType, type, content, productId, fileUrl, seenAt</td><td><code>senderType</code>: customer | admin | ai; <code>type</code>: text | product_card | file | call_log</td></tr>
+      <tr><td><code>calls</code></td><td>conversationId, callerId, calleeId, startedAt, endedAt, status</td><td>Dùng cho thống kê và tin nhắn "Cuộc gọi 4 phút 12 giây"</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>REST API (bản rút gọn)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Phương thức · Đường dẫn</th><th>Quyền</th><th>Chức năng</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST /api/auth/register</code>, <code>/login</code></td><td>Công khai</td><td>Đăng ký, đăng nhập, trả JWT</td></tr>
+      <tr><td><code>GET /api/products?category=&amp;min=&amp;max=&amp;q=</code></td><td>Công khai</td><td>Danh sách, lọc, tìm kiếm, phân trang</td></tr>
+      <tr><td><code>POST/PUT/DELETE /api/products/:id</code></td><td>Admin</td><td>Quản lý sản phẩm</td></tr>
+      <tr><td><code>GET/PUT /api/cart</code></td><td>Khách hàng</td><td>Giỏ hàng</td></tr>
+      <tr><td><code>POST /api/orders</code>, <code>GET /api/orders/me</code></td><td>Khách hàng</td><td>Đặt hàng, xem lịch sử</td></tr>
+      <tr><td><code>GET/PATCH /api/admin/orders</code></td><td>Admin</td><td>Duyệt đơn, đổi trạng thái</td></tr>
+      <tr><td><code>GET /api/conversations</code>, <code>/:id/messages</code></td><td>Đăng nhập</td><td>Lịch sử chat (tin mới đi qua socket)</td></tr>
+      <tr><td><code>POST /api/upload</code></td><td>Đăng nhập</td><td>Tải ảnh/file lên Cloudinary</td></tr>
+      <tr><td><code>POST /api/ai/chat</code></td><td>Công khai (giới hạn số lần)</td><td>Hỏi trợ lý AI</td></tr>
+      <tr><td><code>GET /api/admin/stats</code></td><td>Admin</td><td>Số liệu cho dashboard</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout done"><h4>Xong khi</h4><ul><li>Có ERD, wireframe, bảng API và bảng sự kiện socket. Khi code chỉ việc làm theo.</li></ul></div>
+</section>
+
+<!-- ===================== GĐ 2 ===================== -->
+<section class="phase" id="gd2" data-phase="gd2">
+  <div class="phase-head">
+    <h2><span class="num">2</span>Backend nền + đăng nhập</h2>
+    <div class="meta"><span class="pill">Tuần 2–3</span><span class="pill prog" data-prog="gd2"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> có server chạy được, kết nối CSDL, đăng ký và đăng nhập có phân quyền. Frontend có khung trang và gọi được API.</p>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Khởi tạo Express với các gói <code>cors</code>, <code>helmet</code>, <code>dotenv</code>, <code>morgan</code> và middleware xử lý lỗi chung</span></label></li>
+    <li><label><input type="checkbox"><span>Tạo các model Mongoose theo ERD</span></label></li>
+    <li><label><input type="checkbox"><span>Đăng ký: mã hóa mật khẩu bằng <code>bcrypt</code>. Đăng nhập: ký JWT chứa <code>{id, role}</code></span></label></li>
+    <li><label><input type="checkbox"><span>Viết middleware <code>requireAuth</code> và <code>requireRole('admin')</code></span></label></li>
+    <li><label><input type="checkbox"><span>Viết script seed: 1 admin, 2 khách, 6 danh mục, khoảng 30 sản phẩm với thông số thật<small>Dữ liệu thật giúp AI tư vấn có ý nghĩa và demo thuyết phục hơn.</small></span></label></li>
+    <li><label><input type="checkbox"><span>Frontend: Vite + React Router + axios (tự gắn token) + <code>AuthContext</code>; làm trang Đăng nhập/Đăng ký, layout chung, route chỉ admin vào được</span></label></li>
+  </ul>
+
+  <h3>Cấu trúc thư mục gợi ý</h3>
+<pre>secureshop/
+├─ server/
+│  ├─ src/
+│  │  ├─ config/        <span class="c"># db.js, cloudinary.js</span>
+│  │  ├─ models/        <span class="c"># User, Product, Order, Conversation, Message…</span>
+│  │  ├─ routes/        <span class="c"># auth, products, orders, ai, admin…</span>
+│  │  ├─ controllers/
+│  │  ├─ middlewares/   <span class="c"># auth.js, error.js</span>
+│  │  ├─ socket/        <span class="c"># index.js, chat.js, call.js</span>
+│  │  ├─ services/      <span class="c"># ai.service.js</span>
+│  │  └─ app.js
+│  ├─ seed.js
+│  └─ .env
+└─ client/
+   └─ src/
+      ├─ api/           <span class="c"># axios instance</span>
+      ├─ context/       <span class="c"># AuthContext, SocketContext, CallContext</span>
+      ├─ pages/         <span class="c"># Home, ProductList, ProductDetail, Cart, Checkout…</span>
+      ├─ pages/admin/   <span class="c"># Dashboard, Products, Orders, Inbox</span>
+      └─ components/    <span class="c"># ChatWidget, VideoCall, ProductCard…</span></pre>
+
+  <h3>Middleware phân quyền</h3>
+<pre><span class="k">const</span> jwt = require(<span class="s">'jsonwebtoken'</span>);
+
+exports.requireAuth = (req, res, next) =&gt; {
+  <span class="k">const</span> token = req.headers.authorization?.split(<span class="s">' '</span>)[1];
+  <span class="k">if</span> (!token) <span class="k">return</span> res.status(401).json({ message: <span class="s">'Chưa đăng nhập'</span> });
+  <span class="k">try</span> {
+    req.user = jwt.verify(token, process.env.JWT_SECRET); <span class="c">// { id, role }</span>
+    next();
+  } <span class="k">catch</span> {
+    res.status(401).json({ message: <span class="s">'Token không hợp lệ'</span> });
+  }
+};
+
+exports.requireRole = (role) =&gt; (req, res, next) =&gt;
+  req.user.role === role ? next() : res.status(403).json({ message: <span class="s">'Không có quyền'</span> });</pre>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Gọi được API bằng Postman: login trả token, gọi API admin bằng token khách bị lỗi 403.</li><li>Đăng nhập admin trên frontend thì thấy menu Admin.</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul><li>Chỉ ẩn nút Admin ở frontend mà không chặn ở server. Phải kiểm tra <code>role</code> ở server.</li><li>Đẩy file <code>.env</code> lên GitHub, làm lộ khóa API.</li></ul></div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 3 ===================== -->
+<section class="phase" id="gd3" data-phase="gd3">
+  <div class="phase-head">
+    <h2><span class="num">3</span>Cửa hàng: sản phẩm, giỏ hàng, đơn hàng</h2>
+    <div class="meta"><span class="pill">Tuần 3–5</span><span class="pill prog" data-prog="gd3"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> hoàn chỉnh phần bán hàng, gồm chức năng cho khách mua và cho admin quản lý.</p>
+
+  <h3>Phía khách hàng</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Trang chủ: banner, danh mục, sản phẩm nổi bật, sản phẩm đang giảm giá</span></label></li>
+    <li><label><input type="checkbox"><span>Danh sách sản phẩm có bộ lọc: loại, khoảng giá, độ phân giải (2MP/4MP/8MP), trong nhà/ngoài trời, kết nối WiFi/PoE, thương hiệu; có sắp xếp và phân trang</span></label></li>
+    <li><label><input type="checkbox"><span>Tìm kiếm theo tên (MongoDB text index)</span></label></li>
+    <li><label><input type="checkbox"><span>Chi tiết sản phẩm: ảnh, bảng thông số, nút "Thêm vào giỏ", nút "Hỏi tư vấn về sản phẩm này" (mở chat kèm thẻ sản phẩm)</span></label></li>
+    <li><label><input type="checkbox"><span>Giỏ hàng: dùng localStorage khi chưa đăng nhập, gộp vào DB khi đăng nhập</span></label></li>
+    <li><label><input type="checkbox"><span>Thanh toán (COD, có thể thêm VNPay sandbox) và trang lịch sử đơn hàng</span></label></li>
+  </ul>
+  <h3>Phía admin</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Thêm/sửa/xóa sản phẩm, tải nhiều ảnh lên Cloudinary, nhập thông số theo loại</span></label></li>
+    <li><label><input type="checkbox"><span>Quản lý đơn: <code>pending → confirmed → shipping → done</code> hoặc <code>cancelled</code></span></label></li>
+    <li><label><input type="checkbox"><span>Quản lý người dùng (khóa/mở tài khoản)</span></label></li>
+  </ul>
+
+  <h3>Ví dụ trường <code>specs</code> của một camera</h3>
+<pre>{
+  <span class="s">"resolution"</span>: <span class="s">"4MP (2560×1440)"</span>,
+  <span class="s">"lens"</span>: <span class="s">"2.8 mm, góc nhìn 103°"</span>,
+  <span class="s">"nightVision"</span>: <span class="s">"Hồng ngoại 30 m + có màu ban đêm"</span>,
+  <span class="s">"ipRating"</span>: <span class="s">"IP67"</span>,
+  <span class="s">"connectivity"</span>: [<span class="s">"WiFi 2.4GHz"</span>, <span class="s">"LAN"</span>],
+  <span class="s">"storage"</span>: <span class="s">"MicroSD tối đa 256GB, Cloud"</span>,
+  <span class="s">"features"</span>: [<span class="s">"Phát hiện người"</span>, <span class="s">"Đàm thoại 2 chiều"</span>, <span class="s">"Còi báo động"</span>],
+  <span class="s">"placement"</span>: <span class="s">"outdoor"</span>
+}</pre>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Khách đặt được đơn hoàn chỉnh, tồn kho giảm đúng.</li><li>Admin thấy đơn mới và đổi được trạng thái.</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul><li>Lấy tổng tiền do frontend gửi lên. Server phải tự tính lại từ giá trong DB.</li><li>Không kiểm tra tồn kho khi đặt hàng.</li></ul></div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 4 ===================== -->
+<section class="phase" id="gd4" data-phase="gd4">
+  <div class="phase-head">
+    <h2><span class="num">4</span>Chat realtime khách ↔ admin</h2>
+    <div class="meta"><span class="pill">Tuần 5–6</span><span class="pill prog" data-prog="gd4"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> khách và admin nhắn tin tức thời, admin gửi được thẻ sản phẩm và file. Kết nối Socket.IO này sẽ được dùng lại cho gọi video.</p>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Gắn Socket.IO vào HTTP server và xác thực JWT ngay khi kết nối (handshake)</span></label></li>
+    <li><label><input type="checkbox"><span>Tạo room <code>user:&lt;id&gt;</code> cho mỗi người, room <code>admins</code> cho mọi admin và room <code>conv:&lt;id&gt;</code> cho từng hội thoại</span></label></li>
+    <li><label><input type="checkbox"><span>Lưu tin nhắn vào DB trước, sau đó mới phát (emit) đi, để reload trang không mất tin</span></label></li>
+    <li><label><input type="checkbox"><span>Widget chat của khách: nút nổi góc phải, 2 tab "Trợ lý AI" và "Tư vấn viên"</span></label></li>
+    <li><label><input type="checkbox"><span>Inbox admin chia 2 cột: danh sách hội thoại (badge chưa đọc, chấm online) và khung chat</span></label></li>
+    <li><label><input type="checkbox"><span>Nút "Gửi sản phẩm": admin tìm sản phẩm rồi gửi tin nhắn <code>product_card</code>; khách bấm thẻ thì mở trang chi tiết hoặc thêm vào giỏ</span></label></li>
+    <li><label><input type="checkbox"><span>Gửi ảnh/file: tải lên qua <code>POST /api/upload</code> rồi gửi tin nhắn loại <code>file</code> kèm URL</span></label></li>
+    <li><label><input type="checkbox"><span>Thêm "đang nhập…", "đã xem", trạng thái online/offline và âm báo tin mới</span></label></li>
+  </ul>
+
+  <h3>Bảng sự kiện Socket.IO</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Sự kiện</th><th>Chiều</th><th>Dữ liệu</th></tr></thead>
+    <tbody>
+      <tr><td><code>chat:join</code></td><td>client → server</td><td><code>{conversationId}</code></td></tr>
+      <tr><td><code>chat:send</code></td><td>client → server</td><td><code>{conversationId, type, content, productId?, fileUrl?}</code></td></tr>
+      <tr><td><code>chat:message</code></td><td>server → room</td><td>Tin nhắn đã lưu (có <code>_id</code>, <code>createdAt</code>)</td></tr>
+      <tr><td><code>chat:typing</code></td><td>2 chiều</td><td><code>{conversationId, isTyping}</code></td></tr>
+      <tr><td><code>chat:seen</code></td><td>2 chiều</td><td><code>{conversationId, messageId}</code></td></tr>
+      <tr><td><code>conv:new-waiting</code></td><td>server → admins</td><td>Khách yêu cầu gặp tư vấn viên, kèm tóm tắt của AI</td></tr>
+      <tr><td><code>conv:claim</code></td><td>admin → server</td><td>Admin nhận hội thoại, trạng thái chuyển sang <code>active</code></td></tr>
+      <tr><td><code>presence:update</code></td><td>server → mọi người</td><td><code>{userId, online}</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Khung xử lý phía server</h3>
+<pre><span class="c">// server/src/socket/index.js</span>
+io.use((socket, next) =&gt; {
+  <span class="k">try</span> {
+    socket.user = jwt.verify(socket.handshake.auth.token, process.env.JWT_SECRET);
+    next();
+  } <span class="k">catch</span> { next(<span class="k">new</span> Error(<span class="s">'unauthorized'</span>)); }
+});
+
+io.on(<span class="s">'connection'</span>, (socket) =&gt; {
+  <span class="k">const</span> { id, role } = socket.user;
+  socket.join(<span class="s">`user:${id}`</span>);
+  <span class="k">if</span> (role === <span class="s">'admin'</span>) socket.join(<span class="s">'admins'</span>);
+
+  socket.on(<span class="s">'chat:send'</span>, <span class="k">async</span> (data, ack) =&gt; {
+    <span class="k">const</span> conv = <span class="k">await</span> Conversation.findById(data.conversationId);
+    <span class="k">if</span> (!canAccess(conv, socket.user)) <span class="k">return</span> ack?.({ error: <span class="s">'forbidden'</span> });
+
+    <span class="k">const</span> msg = <span class="k">await</span> Message.create({ ...data, senderId: id, senderType: role });
+    <span class="k">await</span> conv.updateOne({ lastMessageAt: msg.createdAt });
+    io.to(<span class="s">`user:${conv.customerId}`</span>).to(<span class="s">'admins'</span>).emit(<span class="s">'chat:message'</span>, msg);
+    ack?.({ ok: <span class="k">true</span>, id: msg._id });
+  });
+
+  registerCallHandlers(io, socket); <span class="c">// giai đoạn 5</span>
+});</pre>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Laptop A (khách) và laptop B (admin) nhắn qua lại tức thời. Reload trang vẫn còn lịch sử.</li><li>Admin gửi thẻ sản phẩm, khách bấm vào mở đúng trang sản phẩm.</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul><li>Gọi <code>socket.on</code> trong <code>useEffect</code> mà không có hàm dọn (<code>socket.off</code>) làm tin nhắn hiện 2–3 lần.</li><li>Tạo kết nối socket mới mỗi lần render. Chỉ tạo 1 kết nối trong <code>SocketContext</code>.</li></ul></div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 5 ===================== -->
+<section class="phase" id="gd5" data-phase="gd5">
+  <div class="phase-head">
+    <h2><span class="num">5</span>Gọi video WebRTC giữa 2 laptop</h2>
+    <div class="meta"><span class="pill">Tuần 7–8</span><span class="pill prog" data-prog="gd5"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> khách và admin gọi video ngay trong khung chat, có bật/tắt camera và mic, chia sẻ màn hình, và lưu lịch sử cuộc gọi. Phần này đưa bản thử ở giai đoạn 0 vào ứng dụng thật.</p>
+
+  <figure>
+    <svg viewBox="0 0 760 430" role="img" aria-label="Sơ đồ tuần tự gọi video: các tín hiệu call request, accept, offer, answer và ICE đi qua server Socket.IO; còn luồng video và âm thanh đi trực tiếp giữa 2 laptop">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowfill"/>
+        </marker>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="accfill"/>
+        </marker>
+      </defs>
+      <rect class="box" x="40" y="10" width="140" height="36" rx="6"/><text class="lbl-b" x="110" y="33" text-anchor="middle">Laptop A · Khách</text>
+      <rect class="box" x="310" y="10" width="140" height="36" rx="6"/><text class="lbl-b" x="380" y="33" text-anchor="middle">Server Socket.IO</text>
+      <rect class="box" x="580" y="10" width="140" height="36" rx="6"/><text class="lbl-b" x="650" y="33" text-anchor="middle">Laptop B · Admin</text>
+      <line class="life" x1="110" y1="46" x2="110" y2="415"/>
+      <line class="life" x1="380" y1="46" x2="380" y2="415"/>
+      <line class="life" x1="650" y1="46" x2="650" y2="415"/>
+
+      <path class="edge" d="M110,80 L646,80" marker-end="url(#ar2)"/>
+      <text class="lbl halo" x="245" y="74" text-anchor="middle">1. call:request</text>
+      <text class="lbl-sm halo" x="515" y="74" text-anchor="middle">máy B đổ chuông</text>
+
+      <path class="edge" d="M650,115 L114,115" marker-end="url(#ar2)"/>
+      <text class="lbl halo" x="515" y="109" text-anchor="middle">2. call:accept</text>
+
+      <text class="lbl-sm" x="118" y="148">3. getUserMedia() → createOffer()</text>
+
+      <path class="edge" d="M110,180 L646,180" marker-end="url(#ar2)"/>
+      <text class="lbl halo" x="245" y="174" text-anchor="middle">4. webrtc:offer (SDP)</text>
+
+      <text class="lbl-sm" x="642" y="213" text-anchor="end">5. setRemoteDescription → getUserMedia → createAnswer()</text>
+
+      <path class="edge" d="M650,245 L114,245" marker-end="url(#ar2)"/>
+      <text class="lbl halo" x="515" y="239" text-anchor="middle">6. webrtc:answer (SDP)</text>
+
+      <path class="edge" d="M114,282 L646,282" marker-start="url(#ar2)" marker-end="url(#ar2)"/>
+      <text class="lbl halo" x="380" y="276" text-anchor="middle">7. webrtc:ice-candidate (cả 2 chiều, nhiều lần)</text>
+
+      <path class="edge-acc" d="M116,335 L644,335" marker-start="url(#ar3)" marker-end="url(#ar3)"/>
+      <text class="lbl-b halo" x="380" y="326" text-anchor="middle" fill="currentColor">8. Video + âm thanh đi thẳng giữa 2 máy (P2P)</text>
+      <text class="lbl-sm halo" x="380" y="354" text-anchor="middle">không qua server; nếu không đi thẳng được thì qua TURN</text>
+
+      <path class="edge" d="M110,395 L646,395" marker-end="url(#ar2)"/>
+      <text class="lbl halo" x="245" y="389" text-anchor="middle">9. call:end</text>
+      <text class="lbl-sm halo" x="515" y="389" text-anchor="middle">lưu calls + tin call_log</text>
+    </svg>
+    <figcaption>Server chỉ chuyển tiếp các tin nhắn tín hiệu nhỏ (bước 1–7 và 9). Hình và tiếng (bước 8) đi trực tiếp giữa 2 trình duyệt, vì vậy server không bị nặng.</figcaption>
+  </figure>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Server: file <code>socket/call.js</code> chuyển tiếp <code>call:request / accept / reject / end</code> và <code>webrtc:offer / answer / ice-candidate</code> tới room <code>user:&lt;id&gt;</code> của người kia</span></label></li>
+    <li><label><input type="checkbox"><span>Tạo <code>CallContext</code> quản lý trạng thái cuộc gọi: <code>idle → calling → ringing → connected → ended</code></span></label></li>
+    <li><label><input type="checkbox"><span>Popup cuộc gọi đến có Nhận/Từ chối và nhạc chuông; tự hủy sau 30 giây nếu không ai nhấc máy</span></label></li>
+    <li><label><input type="checkbox"><span>Màn hình cuộc gọi: video lớn của người kia, video nhỏ của mình, các nút tắt mic, tắt cam, chia sẻ màn hình, kết thúc, kèm đồng hồ thời gian</span></label></li>
+    <li><label><input type="checkbox"><span>Chia sẻ màn hình bằng <code>getDisplayMedia()</code> rồi <code>sender.replaceTrack()</code> (không cần tạo lại kết nối)</span></label></li>
+    <li><label><input type="checkbox"><span>Cấu hình <code>iceServers</code> gồm STUN của Google và TURN của Metered</span></label></li>
+    <li><label><input type="checkbox"><span>Kết thúc cuộc gọi thì lưu vào <code>calls</code> và chèn tin nhắn <code>call_log</code> vào hội thoại</span></label></li>
+    <li><label><input type="checkbox"><span>Test đủ các trường hợp: cùng WiFi, khác mạng (4G), từ chối, không nhấc máy, một bên reload giữa chừng, không cấp quyền camera</span></label></li>
+  </ul>
+
+  <h3>Phần lõi WebRTC phía client</h3>
+<pre><span class="k">const</span> ICE = { iceServers: [
+  { urls: <span class="s">'stun:stun.l.google.com:19302'</span> },
+  { urls: <span class="s">'turn:a.relay.metered.ca:443'</span>, username: TURN_USER, credential: TURN_PASS },
+]};
+
+<span class="k">let</span> pc, localStream, pendingIce = [];
+
+<span class="k">async function</span> setupPeer(peerId) {
+  pc = <span class="k">new</span> RTCPeerConnection(ICE);
+  localStream = <span class="k">await</span> navigator.mediaDevices.getUserMedia({ video: <span class="k">true</span>, audio: <span class="k">true</span> });
+  localStream.getTracks().forEach(t =&gt; pc.addTrack(t, localStream));
+  localVideo.srcObject = localStream;
+
+  pc.ontrack = (e) =&gt; { remoteVideo.srcObject = e.streams[0]; };
+  pc.onicecandidate = (e) =&gt; e.candidate &amp;&amp;
+    socket.emit(<span class="s">'webrtc:ice-candidate'</span>, { to: peerId, candidate: e.candidate });
+}
+
+<span class="c">// Bên gọi (sau khi nhận call:accept)</span>
+<span class="k">async function</span> startCall(peerId) {
+  <span class="k">await</span> setupPeer(peerId);
+  <span class="k">const</span> offer = <span class="k">await</span> pc.createOffer();
+  <span class="k">await</span> pc.setLocalDescription(offer);
+  socket.emit(<span class="s">'webrtc:offer'</span>, { to: peerId, sdp: offer });
+}
+
+<span class="c">// Bên nhận</span>
+socket.on(<span class="s">'webrtc:offer'</span>, <span class="k">async</span> ({ from, sdp }) =&gt; {
+  <span class="k">await</span> setupPeer(from);
+  <span class="k">await</span> pc.setRemoteDescription(sdp);
+  pendingIce.forEach(c =&gt; pc.addIceCandidate(c)); pendingIce = [];
+  <span class="k">const</span> answer = <span class="k">await</span> pc.createAnswer();
+  <span class="k">await</span> pc.setLocalDescription(answer);
+  socket.emit(<span class="s">'webrtc:answer'</span>, { to: from, sdp: answer });
+});
+
+socket.on(<span class="s">'webrtc:answer'</span>, ({ sdp }) =&gt; pc.setRemoteDescription(sdp));
+
+socket.on(<span class="s">'webrtc:ice-candidate'</span>, ({ candidate }) =&gt;
+  pc?.remoteDescription ? pc.addIceCandidate(candidate) : pendingIce.push(candidate));
+
+<span class="c">// Chia sẻ màn hình</span>
+<span class="k">async function</span> shareScreen() {
+  <span class="k">const</span> screen = <span class="k">await</span> navigator.mediaDevices.getDisplayMedia({ video: <span class="k">true</span> });
+  <span class="k">const</span> sender = pc.getSenders().find(s =&gt; s.track?.kind === <span class="s">'video'</span>);
+  sender.replaceTrack(screen.getVideoTracks()[0]);
+  screen.getVideoTracks()[0].onended = () =&gt;
+    sender.replaceTrack(localStream.getVideoTracks()[0]);
+}</pre>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Từ khung chat, admin bấm gọi và khách nhận được trên laptop kia, có hình và tiếng 2 chiều.</li><li>Admin chia sẻ màn hình trang thông số sản phẩm cho khách xem được.</li><li>Gọi được cả khi 2 máy khác mạng.</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul>
+      <li>ICE candidate đến trước <code>setRemoteDescription</code> thì bị lỗi. Cần cho vào hàng đợi như đoạn code trên.</li>
+      <li>React StrictMode chạy <code>useEffect</code> 2 lần nên tạo 2 <code>RTCPeerConnection</code>. Hãy giữ <code>pc</code> trong <code>useRef</code>.</li>
+      <li>Quên <code>track.stop()</code> khi kết thúc làm đèn camera vẫn sáng.</li>
+      <li>Thẻ <code>&lt;video&gt;</code> của mình thiếu <code>muted</code> nên bị hú (vọng tiếng).</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 6 ===================== -->
+<section class="phase" id="gd6" data-phase="gd6">
+  <div class="phase-head">
+    <h2><span class="num">6</span>Trợ lý AI tư vấn</h2>
+    <div class="meta"><span class="pill">Tuần 8–10</span><span class="pill prog" data-prog="gd6"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> AI hỏi nhu cầu và gợi ý đúng sản phẩm đang bán, kèm giá thật. Khi khách cần người thật, AI chuyển cho admin kèm bản tóm tắt.</p>
+
+  <figure>
+    <svg viewBox="0 0 960 170" role="img" aria-label="Luồng xử lý trợ lý AI: câu hỏi của khách, backend lọc sản phẩm phù hợp trong CSDL, ghép prompt, gọi LLM, trả về câu trả lời kèm mã sản phẩm, frontend hiện thẻ sản phẩm">
+      <defs>
+        <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowfill"/>
+        </marker>
+      </defs>
+      <rect class="box" x="0" y="50" width="150" height="56" rx="8"/>
+      <text class="lbl-b" x="75" y="74" text-anchor="middle">Khách hỏi</text>
+      <text class="lbl-sm" x="75" y="93" text-anchor="middle">"cam cho shop 50m²"</text>
+
+      <rect class="box" x="200" y="50" width="160" height="56" rx="8"/>
+      <text class="lbl-b" x="280" y="74" text-anchor="middle">Lọc sản phẩm</text>
+      <text class="lbl-sm" x="280" y="93" text-anchor="middle">MongoDB: loại, giá, còn hàng</text>
+
+      <rect class="box" x="410" y="50" width="160" height="56" rx="8"/>
+      <text class="lbl-b" x="490" y="74" text-anchor="middle">Ghép prompt</text>
+      <text class="lbl-sm" x="490" y="93" text-anchor="middle">luật + SP + lịch sử chat</text>
+
+      <rect class="box-acc" x="620" y="50" width="130" height="56" rx="8"/>
+      <text class="lbl-b" x="685" y="74" text-anchor="middle">LLM API</text>
+      <text class="lbl-sm" x="685" y="93" text-anchor="middle">trả JSON</text>
+
+      <rect class="box" x="800" y="50" width="160" height="56" rx="8"/>
+      <text class="lbl-b" x="880" y="74" text-anchor="middle">Hiện cho khách</text>
+      <text class="lbl-sm" x="880" y="93" text-anchor="middle">lời tư vấn + thẻ SP</text>
+
+      <path class="edge" d="M150,78 L196,78" marker-end="url(#ar4)"/>
+      <path class="edge" d="M360,78 L406,78" marker-end="url(#ar4)"/>
+      <path class="edge" d="M570,78 L616,78" marker-end="url(#ar4)"/>
+      <path class="edge" d="M750,78 L796,78" marker-end="url(#ar4)"/>
+      <path class="edge" d="M685,106 L685,140 L280,140 L280,110" marker-end="url(#ar4)" stroke-dasharray="4 3"/>
+      <text class="lbl-sm halo" x="482" y="158" text-anchor="middle">productIds trong JSON được đối chiếu lại với DB, loại bỏ mã không tồn tại</text>
+      <text class="lbl-sm" x="480" y="30" text-anchor="middle">Toàn bộ chạy ở backend, khóa API không bao giờ xuống trình duyệt</text>
+    </svg>
+    <figcaption>Đây là RAG đơn giản: lấy dữ liệu thật từ DB đưa vào prompt. Với khoảng 30–200 sản phẩm, chỉ cần lọc bằng truy vấn MongoDB thông thường, chưa cần vector database.</figcaption>
+  </figure>
+
+  <h3>Trạng thái hội thoại khi chuyển AI sang admin</h3>
+  <figure>
+    <svg viewBox="0 0 820 150" role="img" aria-label="Máy trạng thái hội thoại: ai chuyển sang waiting khi khách bấm gặp tư vấn viên, waiting chuyển sang active khi admin nhận, active chuyển sang closed khi kết thúc, closed quay lại ai khi khách nhắn mới">
+      <defs>
+        <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowfill"/>
+        </marker>
+      </defs>
+      <rect class="box-acc" x="10" y="45" width="120" height="44" rx="22"/><text class="lbl-b" x="70" y="72" text-anchor="middle">ai</text>
+      <rect class="box" x="240" y="45" width="120" height="44" rx="22"/><text class="lbl-b" x="300" y="72" text-anchor="middle">waiting</text>
+      <rect class="box" x="470" y="45" width="120" height="44" rx="22"/><text class="lbl-b" x="530" y="72" text-anchor="middle">active</text>
+      <rect class="box" x="690" y="45" width="120" height="44" rx="22"/><text class="lbl-b" x="750" y="72" text-anchor="middle">closed</text>
+      <path class="edge" d="M130,67 L236,67" marker-end="url(#ar5)"/>
+      <path class="edge" d="M360,67 L466,67" marker-end="url(#ar5)"/>
+      <path class="edge" d="M590,67 L686,67" marker-end="url(#ar5)"/>
+      <path class="edge" d="M750,89 L750,125 L70,125 L70,93" marker-end="url(#ar5)"/>
+      <g class="lbl-sm halo" text-anchor="middle">
+        <text x="183" y="58">khách bấm</text><text x="183" y="40">"Gặp tư vấn viên"</text>
+        <text x="413" y="58">admin nhận</text><text x="413" y="40">(conv:claim)</text>
+        <text x="638" y="58">kết thúc</text>
+        <text x="410" y="140">khách nhắn tin mới → AI tiếp nhận lại</text>
+      </g>
+    </svg>
+    <figcaption>Khi chuyển sang <code>waiting</code>, AI viết sẵn 2–3 dòng tóm tắt nhu cầu của khách để admin không phải đọc lại cả cuộc trò chuyện.</figcaption>
+  </figure>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Viết <code>ai.service.js</code> để gọi LLM API từ backend; khóa API để trong <code>.env</code></span></label></li>
+    <li><label><input type="checkbox"><span>Bước lọc: rút từ câu hỏi ra loại thiết bị và ngân sách (dùng từ khóa, hoặc nhờ LLM trả JSON), truy vấn tối đa 15 sản phẩm còn hàng</span></label></li>
+    <li><label><input type="checkbox"><span>Viết system prompt (mẫu bên dưới) và bắt LLM trả về định dạng JSON cố định</span></label></li>
+    <li><label><input type="checkbox"><span>Đối chiếu <code>productIds</code> với DB rồi trả về cho frontend để hiện thẻ sản phẩm có nút "Thêm vào giỏ"</span></label></li>
+    <li><label><input type="checkbox"><span>Chuyển cho admin: khi <code>handoff: true</code> hoặc khách bấm nút thì đổi trạng thái và phát <code>conv:new-waiting</code> kèm tóm tắt</span></label></li>
+    <li><label><input type="checkbox"><span>Giới hạn số lần gọi (vd. 20 câu/phút/IP) bằng <code>express-rate-limit</code>; chỉ gửi 10 tin gần nhất làm ngữ cảnh</span></label></li>
+    <li><label><input type="checkbox"><span>Soạn bộ 20 câu hỏi kiểm thử (đủ loại nhu cầu, câu ngoài lề, câu cố tình gài) và ghi kết quả vào báo cáo</span></label></li>
+  </ul>
+
+  <h3>Mẫu system prompt</h3>
+<pre>Bạn là trợ lý tư vấn của SecureShop, cửa hàng thiết bị an ninh.
+Quy tắc:
+- Chỉ giới thiệu sản phẩm có trong DANH SÁCH SẢN PHẨM bên dưới. Không bịa tên, giá, thông số.
+- Nếu chưa rõ nhu cầu, hỏi tối đa 2 câu: lắp ở đâu (nhà/shop/kho, trong nhà/ngoài trời),
+  diện tích hoặc số vị trí cần quan sát, ngân sách.
+- Gợi ý 1–3 sản phẩm, giải thích ngắn vì sao phù hợp.
+- Nếu khách muốn gặp người thật, hỏi lắp đặt tận nơi, bảo hành, đổi trả, hoặc bạn không chắc
+  câu trả lời → đặt handoff = true.
+- Trả lời bằng tiếng Việt, thân thiện, ngắn gọn.
+
+Chỉ trả về JSON đúng dạng:
+{ "reply": "...", "productIds": ["..."], "handoff": false, "summary": "..." }
+
+DANH SÁCH SẢN PHẨM:
+{{products}}   <span class="c">← backend chèn: id | tên | giá | thông số chính | tồn kho</span></pre>
+
+  <h3>Endpoint phía server</h3>
+<pre>router.post(<span class="s">'/ai/chat'</span>, aiLimiter, <span class="k">async</span> (req, res) =&gt; {
+  <span class="k">const</span> { message, history = [] } = req.body;
+  <span class="k">const</span> products = <span class="k">await</span> findRelevantProducts(message);   <span class="c">// lọc MongoDB</span>
+  <span class="k">const</span> prompt = buildSystemPrompt(products);
+  <span class="k">const</span> raw = <span class="k">await</span> callLLM(prompt, [...history.slice(-10), { role: <span class="s">'user'</span>, content: message }]);
+
+  <span class="k">let</span> out;
+  <span class="k">try</span> { out = JSON.parse(raw); }
+  <span class="k">catch</span> { out = { reply: raw, productIds: [], handoff: <span class="k">false</span> }; }
+
+  <span class="k">const</span> valid = products.filter(p =&gt; out.productIds?.includes(String(p._id)));
+  res.json({ reply: out.reply, products: valid, handoff: !!out.handoff, summary: out.summary });
+});</pre>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Hỏi "camera ngoài trời dưới 1 triệu" thì AI gợi ý đúng sản phẩm có trong DB, đúng giá.</li><li>Nói "cho tôi gặp nhân viên" thì admin trên laptop B nhận được thông báo kèm tóm tắt.</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul><li>Gọi LLM trực tiếp từ React làm lộ khóa API.</li><li>Đưa toàn bộ lịch sử chat vào prompt khiến tốn token và chậm.</li><li>Tin tuyệt đối vào <code>productIds</code> do AI trả. Luôn đối chiếu lại với DB.</li></ul></div>
+  </div>
+</section>
+
+<!-- ===================== GĐ 7 ===================== -->
+<section class="phase" id="gd7" data-phase="gd7">
+  <div class="phase-head">
+    <h2><span class="num">7</span>Dashboard, deploy, kiểm thử &amp; báo cáo</h2>
+    <div class="meta"><span class="pill">Tuần 10–12</span><span class="pill prog" data-prog="gd7"></span></div>
+  </div>
+  <p class="goal"><b>Mục tiêu:</b> hoàn thiện trang quản trị, đưa hệ thống lên mạng có HTTPS, chuẩn bị kịch bản demo trên 2 laptop và viết báo cáo.</p>
+
+  <h3>Việc cần làm</h3>
+  <ul class="tasks">
+    <li><label><input type="checkbox"><span>Dashboard: doanh thu theo ngày (biểu đồ đường, Chart.js hoặc Recharts), số đơn theo trạng thái, top 5 sản phẩm bán chạy, số hội thoại đang chờ, tỉ lệ AI chuyển cho admin</span></label></li>
+    <li><label><input type="checkbox"><span>Deploy: frontend lên Vercel hoặc Netlify, backend lên Render hoặc Railway (có hỗ trợ WebSocket), DB dùng MongoDB Atlas<small>Phương án dự phòng: chạy local và dùng ngrok khi demo.</small></span></label></li>
+    <li><label><input type="checkbox"><span>Cấu hình CORS đúng domain, biến môi trường trên host, và bật <code>transports: ['websocket']</code> nếu host gặp lỗi polling</span></label></li>
+    <li><label><input type="checkbox"><span>Viết bảng test case: đăng nhập, đặt hàng, chat, gọi video, AI (đầu vào, kết quả mong đợi, kết quả thực tế)</span></label></li>
+    <li><label><input type="checkbox"><span>Diễn tập kịch bản demo bên dưới ít nhất 2 lần trên đúng 2 laptop và mạng sẽ dùng hôm bảo vệ</span></label></li>
+    <li><label><input type="checkbox"><span>Viết báo cáo: giới thiệu, cơ sở lý thuyết (WebSocket, WebRTC, LLM/RAG), phân tích thiết kế, cài đặt, kiểm thử, kết luận</span></label></li>
+  </ul>
+
+  <h3>Kịch bản demo trên 2 laptop (khoảng 7 phút)</h3>
+  <ol class="demo">
+    <li><span class="who">Laptop A (khách):</span> mở web, hỏi AI "Tôi cần camera cho shop quần áo khoảng 50m², ngân sách 2 triệu". AI hỏi thêm 1 câu rồi gợi ý 2 sản phẩm có thẻ.</li>
+    <li><span class="who">Laptop A:</span> bấm "Gặp tư vấn viên".</li>
+    <li><span class="who">Laptop B (admin):</span> nghe âm báo, thấy hội thoại mới kèm tóm tắt của AI rồi bấm Nhận.</li>
+    <li><span class="who">Laptop B:</span> nhắn tin và gửi thẻ sản phẩm đầu ghi để đi kèm camera.</li>
+    <li><span class="who">Laptop B:</span> bấm Gọi video. Laptop A nhận cuộc gọi, hai bên thấy nhau.</li>
+    <li><span class="who">Laptop B:</span> chia sẻ màn hình bảng thông số để giải thích. Kết thúc cuộc gọi, tin "Cuộc gọi 2 phút" xuất hiện trong chat.</li>
+    <li><span class="who">Laptop A:</span> bấm thẻ sản phẩm, thêm vào giỏ, đặt hàng COD.</li>
+    <li><span class="who">Laptop B:</span> mở Dashboard thấy đơn mới, doanh thu tăng; xác nhận đơn và khách thấy trạng thái đổi.</li>
+  </ol>
+
+  <div class="two">
+    <div class="callout done"><h4>Xong khi</h4><ul><li>Kịch bản chạy trơn tru 2 lần liên tiếp.</li><li>Có link HTTPS công khai hoặc ngrok dự phòng, và có video quay lại demo phòng khi mạng hôm bảo vệ có sự cố.</li></ul></div>
+    <div class="callout trap"><h4>Bẫy hay gặp</h4><ul><li>Gói miễn phí của Render "ngủ" sau 15 phút không dùng, request đầu tiên mất khoảng 50 giây. Hãy mở trước khi demo.</li><li>WiFi trường có thể chặn kết nối P2P. Lúc này TURN qua cổng 443 là bắt buộc.</li></ul></div>
+  </div>
+</section>
+
+<p class="foot">Thời lượng tính theo 1 người làm khoảng 15–20 giờ/tuần. Làm nhóm 2–3 người thì chia theo cột: một người phụ trách cửa hàng, một người phụ trách chat và video, một người phụ trách AI và dashboard. Nhóm có thể chạy song song từ tuần 3.</p>
+
+</main>
+</div>
+
+<script>
+(function () {
+  var KEY = 'secureshop-roadmap-v1';
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+
+  var phases = document.querySelectorAll('section.phase');
+  function updateProgress(phaseId) {
+    var boxes = document.querySelectorAll('#' + phaseId + ' ul.tasks input');
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    document.querySelectorAll('[data-prog="' + phaseId + '"]').forEach(function (el) {
+      el.textContent = done + '/' + boxes.length;
+    });
+  }
+
+  phases.forEach(function (sec) {
+    var pid = sec.dataset.phase;
+    sec.querySelectorAll('ul.tasks input').forEach(function (box, i) {
+      var id = pid + '-task-' + i;
+      box.id = id;
+      box.checked = !!saved[id];
+      box.addEventListener('change', function () {
+        saved[id] = box.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+        updateProgress(pid);
+      });
+    });
+    updateProgress(pid);
+  });
+})();
+</script>
+</body>
+</html>

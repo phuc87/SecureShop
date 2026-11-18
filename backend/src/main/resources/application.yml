@@ -1,0 +1,103 @@
+server:
+  port: ${PORT:8081}                   # 8080 đã bị Apache của XAMPP dùng
+
+spring:
+  application:
+    name: secureshop
+  # Thông tin bí mật (Gmail App Password...) để trong backend/secrets.properties, KHÔNG đưa lên Git.
+  # Xem mẫu: backend/secrets.properties.example
+  # Tìm ở thư mục backend (chạy bằng start-backend.bat) hoặc thư mục gốc dự án (chạy bằng nút Run của VS Code)
+  config:
+    import:
+      - optional:file:./secrets.properties
+      - optional:file:./backend/secrets.properties
+  autoconfigure:
+    # Đăng nhập bằng JWT tự viết, không cần user mặc định của Spring Security
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  thymeleaf:
+    check-template-location: false     # Thymeleaf chỉ dùng dựng email (templates/email/*.html)
+
+  # ===== Upload file đính kèm trong chat =====
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 26MB
+
+  # ===== Database: MariaDB trong XAMPP =====
+  datasource:
+    url: jdbc:mariadb://localhost:3306/secureshop_ai?useUnicode=true&characterEncoding=utf8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}          # XAMPP mặc định để trống
+
+  jpa:
+    hibernate:
+      ddl-auto: validate               # bảng tạo bằng file SQL, Hibernate chỉ kiểm tra entity có khớp không
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50   # tải category/brand/ảnh theo lô, tránh N+1 query
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+
+  # ===== Gmail SMTP: gửi email đơn hàng =====
+  # MAIL_USERNAME = địa chỉ Gmail của shop, MAIL_APP_PASSWORD = App Password 16 ký tự (KHÔNG phải mật khẩu Gmail)
+  # Điền trong backend/secrets.properties. Để trống thì đơn vẫn đặt được, email chỉ được ghi log "chưa cấu hình".
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_APP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 15000
+      mail.smtp.writetimeout: 15000
+    default-encoding: UTF-8
+
+app:
+  jwt:
+    # Chuỗi bí mật tối thiểu 32 ký tự. Khi deploy đặt biến môi trường JWT_SECRET khác giá trị này.
+    secret: ${JWT_SECRET:secureshop-dev-secret-key-change-me-0123456789}
+    expiration-minutes: 1440           # token sống 1 ngày
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  upload:
+    # Thư mục lưu file chat (ảnh, ghi âm, video...). Đường dẫn tương đối tính từ thư mục chạy backend.
+    dir: ${UPLOAD_DIR:uploads}
+    max-size-mb: 25
+  # Địa chỉ website, dùng để tạo link "Xem đơn hàng" trong email
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  mail:
+    from-name: SecureShop
+    # Email nhận thông báo "có đơn mới". Để trống = gửi về chính Gmail của shop (MAIL_USERNAME).
+    admin-notify: ${ADMIN_NOTIFY_EMAIL:}
+  # Thông tin cửa hàng trong email. Tài khoản ngân hàng là DỮ LIỆU MẪU, đổi thành tài khoản thật trước khi dùng.
+  shop:
+    name: SecureShop
+    hotline: 1900 1234
+    bank-name: Vietcombank
+    bank-account: "0000 1234 5678"
+    bank-holder: CONG TY SECURESHOP
+    # Trợ lý AI dùng để trả lời khách (phải khớp frontend/src/utils/shopInfo.js)
+    address: 123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh
+    hours: 8:00 - 21:00, thứ 2 đến chủ nhật
+    email: hotro@secureshop.vn
+  order:
+    free-shipping-from: 2000000      # miễn phí giao hàng từ 2 triệu
+    shipping-fee: 30000
+  # ===== Trợ lý AI (ai-service Python, chạy bằng start-ai.bat) =====
+  ai:
+    url: ${AI_URL:http://127.0.0.1:8000}
+    key: ${AI_API_KEY:secureshop-ai-dev-key}   # phải khớp AI_API_KEY bên ai-service
+    timeout-ms: 4000
+    # Độ tin cậy tối thiểu để tin intent của model; thấp hơn thì hỏi lại / dựa vào thông tin trích xuất được
+    min-confidence: 0.45
+
+logging:
+  level:
+    com.secureshop: DEBUG

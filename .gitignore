@@ -1,0 +1,35 @@
+# Java / Maven
+backend/target/
+*.class
+*.log
+
+# Node
+node_modules/
+frontend/dist/
+
+# Python / AI
+__pycache__/
+.venv/
+ai-service/models/
+
+# Bí mật
+.env
+.env.*
+!.env.example
+application-local.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# File người dùng tải lên (chat)
+backend/uploads/
+uploads/
+
+# Gmail App Password và thông tin bí mật khác
+backend/secrets.properties
+secrets.properties
+
+# File sao lưu database (backup-database.bat) - có dữ liệu khách hàng
+backups/

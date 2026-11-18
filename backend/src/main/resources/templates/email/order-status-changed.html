@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Đơn hàng ' + ${order.orderCode} + ': ' + ${toLabel}">Cập nhật đơn hàng</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f1b2d;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f9;padding:24px 12px;">
+    <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+               style="max-width:600px;width:100%;background:#ffffff;border:1px solid #dde3ec;border-radius:12px;overflow:hidden;">
+            <tr th:replace="~{email/parts :: header}"></tr>
+            <tr><td style="padding:24px;font-size:15px;line-height:1.6;">
+                <p style="margin:0 0 4px;">Xin chào <b th:text="${order.receiverName}">Khách</b>,</p>
+                <div th:switch="${toStatus}">
+                    <h1 th:case="'CONFIRMED'" style="font-size:21px;margin:8px 0;">✅ Đơn hàng đã được xác nhận</h1>
+                    <h1 th:case="'SHIPPING'" style="font-size:21px;margin:8px 0;">🚚 Đơn hàng đang được giao</h1>
+                    <h1 th:case="'COMPLETED'" style="font-size:21px;margin:8px 0;">🎉 Giao hàng thành công</h1>
+                    <h1 th:case="'CANCELLED'" style="font-size:21px;margin:8px 0;color:#c92a2a;">Đơn hàng đã bị huỷ</h1>
+                    <h1 th:case="*" style="font-size:21px;margin:8px 0;" th:text="${toLabel}">Cập nhật</h1>
+                </div>
+                <p style="margin:0;" th:switch="${toStatus}">
+                    <span th:case="'CONFIRMED'">Đơn <b th:text="${order.orderCode}">SS000</b> đã được xác nhận và đang được đóng gói.</span>
+                    <span th:case="'SHIPPING'">Đơn <b th:text="${order.orderCode}">SS000</b> đã được giao cho đơn vị vận chuyển. Bạn vui lòng để ý điện thoại để nhận hàng nhé.</span>
+                    <span th:case="'COMPLETED'">Đơn <b th:text="${order.orderCode}">SS000</b> đã giao thành công. Cảm ơn bạn đã tin tưởng mua sắm! Sản phẩm được bảo hành theo chính sách của cửa hàng.</span>
+                    <span th:case="'CANCELLED'">Đơn <b th:text="${order.orderCode}">SS000</b> đã bị huỷ.</span>
+                    <span th:case="*">Đơn <b th:text="${order.orderCode}">SS000</b> chuyển sang trạng thái <b th:text="${toLabel}">mới</b>.</span>
+                </p>
+                <p th:if="${note != null and toStatus == 'CANCELLED'}" style="margin:12px 0 0;padding:12px 14px;background:#fdecec;border-radius:8px;font-size:14px;">
+                    <b>Lý do:</b> <span th:text="${note}">lý do</span>
+                </p>
+
+                <table th:replace="~{email/parts :: items}"></table>
+                <table th:replace="~{email/parts :: button('Xem chi tiết đơn hàng')}"></table>
+            </td></tr>
+            <tr th:replace="~{email/parts :: footer}"></tr>
+        </table>
+    </td></tr>
+</table>
+</body>
+</html>

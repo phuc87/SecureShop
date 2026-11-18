@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Xác nhận đơn hàng ' + ${order.orderCode}">Xác nhận đơn hàng</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f1b2d;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f9;padding:24px 12px;">
+    <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+               style="max-width:600px;width:100%;background:#ffffff;border:1px solid #dde3ec;border-radius:12px;overflow:hidden;">
+            <tr th:replace="~{email/parts :: header}"></tr>
+            <tr><td style="padding:24px;font-size:15px;line-height:1.6;">
+                <h1 style="font-size:21px;margin:0 0 8px;">Cảm ơn bạn đã đặt hàng! 🎉</h1>
+                <p style="margin:0 0 4px;">Xin chào <b th:text="${order.receiverName}">Khách</b>,</p>
+                <p style="margin:0;">
+                    Chúng tôi đã nhận đơn hàng <b style="color:#0b4fc4;" th:text="${order.orderCode}">SS000</b>
+                    lúc <span th:text="${#temporals.format(order.createdAt, 'HH:mm, dd/MM/yyyy')}">00:00</span>.
+                    Tư vấn viên sẽ gọi xác nhận trong giờ làm việc.
+                </p>
+
+                <table th:replace="~{email/parts :: items}"></table>
+                <table th:replace="~{email/parts :: shipping}"></table>
+
+                <table th:if="${order.paymentMethod.name() == 'BANK_TRANSFER'}" role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                       style="border:2px dashed #0b4fc4;border-radius:8px;font-size:14px;margin:0 0 16px;">
+                    <tr><td style="padding:14px 16px;line-height:1.7;">
+                        <b style="color:#0b4fc4;">Thông tin chuyển khoản</b><br>
+                        Ngân hàng: <b th:text="${bankName}">Ngân hàng</b><br>
+                        Số tài khoản: <b th:text="${bankAccount}">000</b><br>
+                        Chủ tài khoản: <b th:text="${bankHolder}">Tên</b><br>
+                        Số tiền: <b th:text="${#numbers.formatDecimal(order.total, 1, 'POINT', 0, 'COMMA')} + ' ₫'">0 ₫</b><br>
+                        Nội dung: <b th:text="${order.orderCode}">SS000</b><br>
+                        <span style="color:#586977;font-size:13px;">Đơn sẽ được xác nhận sau khi chúng tôi nhận được tiền.</span>
+                    </td></tr>
+                </table>
+
+                <table th:replace="~{email/parts :: button('Xem đơn hàng của tôi')}"></table>
+            </td></tr>
+            <tr th:replace="~{email/parts :: footer}"></tr>
+        </table>
+    </td></tr>
+</table>
+</body>
+</html>

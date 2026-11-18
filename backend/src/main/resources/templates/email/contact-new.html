@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Liên hệ mới</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f1b2d;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f9;padding:24px 12px;">
+    <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+               style="max-width:600px;width:100%;background:#ffffff;border:1px solid #dde3ec;border-radius:12px;overflow:hidden;">
+            <tr th:replace="~{email/parts :: header}"></tr>
+            <tr><td style="padding:24px;font-size:15px;line-height:1.6;">
+                <h1 style="font-size:21px;margin:0 0 8px;">📩 Có yêu cầu liên hệ mới</h1>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                       style="background:#f6f8fb;border-radius:8px;font-size:14px;margin:8px 0 12px;">
+                    <tr><td style="padding:14px 16px;line-height:1.7;">
+                        <b>Khách:</b> <span th:text="${c.fullName}">Tên</span><br>
+                        <b>Email:</b> <span th:text="${c.email}">email</span><br>
+                        <span th:if="${c.phone != null}"><b>Điện thoại:</b> <span th:text="${c.phone}">SĐT</span><br></span>
+                        <b>Chủ đề:</b> <span th:text="${subjectLabel}">Tư vấn</span>
+                    </td></tr>
+                </table>
+                <p style="margin:0 0 16px;padding:12px 14px;border-left:4px solid #0b4fc4;background:#f3f7ff;white-space:pre-line;"
+                   th:text="${c.message}">Nội dung</p>
+                <p style="margin:0 0 12px;color:#586977;font-size:14px;">Bấm <b>Trả lời</b> trong Gmail để trả lời thẳng cho khách,
+                    xong vào trang quản trị đánh dấu "Đã xử lý".</p>
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                    <tr><td style="background:#0b4fc4;border-radius:8px;">
+                        <a th:href="${adminUrl}" href="#"
+                           style="display:inline-block;padding:12px 22px;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;">Mở trang Liên hệ</a>
+                    </td></tr>
+                </table>
+            </td></tr>
+            <tr th:replace="~{email/parts :: footer}"></tr>
+        </table>
+    </td></tr>
+</table>
+</body>
+</html>
