@@ -40,7 +40,15 @@ public class ProductReview {
     @Column(columnDefinition = "TEXT")
     private String comment;
 
+    /** Admin đã xem chưa (đánh giá mới = false -> hiện thông báo ở trang quản trị). */
+    @Column(name = "admin_seen", nullable = false)
+    private boolean adminSeen = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** Lần sửa gần nhất của khách (null = chưa sửa). */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

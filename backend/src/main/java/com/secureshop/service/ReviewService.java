@@ -1,7 +1,9 @@
 package com.secureshop.service;
 
 import com.secureshop.dto.PageResponse;
+import com.secureshop.dto.review.AdminReviewResponse;
 import com.secureshop.dto.review.CreateReviewRequest;
+import com.secureshop.dto.review.UpdateReviewRequest;
 import com.secureshop.dto.review.ProductReviewsResponse;
 import com.secureshop.dto.review.ReviewEligibilityResponse;
 import com.secureshop.dto.review.ReviewResponse;
@@ -16,6 +18,7 @@ import com.secureshop.repository.OrderRepository;
 import com.secureshop.repository.ProductRepository;
 import com.secureshop.repository.ProductReviewRepository;
 import com.secureshop.repository.UserRepository;
+import com.secureshop.websocket.ChatNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -41,6 +44,7 @@ public class ReviewService {
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final ChatNotifier notifier;
 
     @Transactional(readOnly = true)
     public ProductReviewsResponse forProduct(String slug, int page, int size) {
@@ -115,7 +119,59 @@ public class ReviewService {
             throw ApiException.conflict("Bạn đã đánh giá sản phẩm này cho đơn hàng đó rồi");
         }
         log.info("Khách #{} đánh giá {} sao sản phẩm #{} (đơn #{})", userId, req.rating(), product.getId(), orderId);
-        return ReviewResponse.from(reviewRepository.findById(review.getId()).orElseThrow());
+        ProductReview saved = reviewRepository.findById(review.getId()).orElseThrow();
+        // Báo ngay cho admin đang mở trang quản trị (gửi sau khi lưu DB thành công)
+        Map<String, Object> event = new LinkedHashMap<>();
+        event.put("type", "REVIEW");
+        event.put("reviewId", saved.getId());
+        event.put("rating", saved.getRating());
+        event.put("productName", product.getName());
+        event.put("customerName", saved.getUser().getFullName());
+        notifier.toAdminsRaw(event);
+        return ReviewResponse.from(saved);
+    }
+
+    /** Đánh giá của chính khách cho 1 sản phẩm (để hiện khung "Đánh giá của bạn" + nút Sửa). */
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> mine(Long userId, Long productId) {
+        return reviewRepository.findMine(userId, productId).stream().map(ReviewResponse::from).toList();
+    }
+
+    /**
+     * Khách sửa đánh giá CỦA CHÍNH MÌNH. Sửa xong:
+     *  - lưu thời điểm sửa (hiện "đã chỉnh sửa" cho minh bạch),
+     *  - đánh giá quay về "chưa xem" + báo admin ngay (nội dung có thể đã đổi, vd 5 sao -> 1 sao).
+     */
+    @Transactional
+    public ReviewResponse update(Long userId, Long reviewId, UpdateReviewRequest req) {
+        ProductReview r = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> ApiException.notFound("Không tìm thấy đánh giá"));
+        if (!r.getUser().getId().equals(userId)) {
+            // Không tiết lộ đánh giá đó có tồn tại hay không
+            throw ApiException.notFound("Không tìm thấy đánh giá");
+        }
+        String comment = req.comment() == null || req.comment().isBlank() ? null : req.comment().trim();
+        if (r.getRating().equals(req.rating()) && java.util.Objects.equals(r.getComment(), comment)) {
+            return ReviewResponse.from(r); // không đổi gì -> không đánh dấu "đã chỉnh sửa", không báo admin
+        }
+        int oldRating = r.getRating();
+        r.setRating(req.rating());
+        r.setComment(comment);
+        r.setUpdatedAt(java.time.LocalDateTime.now());
+        r.setAdminSeen(false);
+        reviewRepository.flush();
+        log.info("Khách #{} sửa đánh giá #{}: {} -> {} sao", userId, reviewId, oldRating, req.rating());
+
+        Map<String, Object> event = new LinkedHashMap<>();
+        event.put("type", "REVIEW");
+        event.put("edited", true);
+        event.put("reviewId", r.getId());
+        event.put("rating", r.getRating());
+        event.put("oldRating", oldRating);
+        event.put("productName", r.getProduct().getName());
+        event.put("customerName", r.getUser().getFullName());
+        notifier.toAdminsRaw(event);
+        return ReviewResponse.from(r);
     }
 
     /** Sản phẩm nào trong đơn (của chính khách) đã được đánh giá. */
@@ -126,6 +182,35 @@ public class ReviewService {
             throw ApiException.notFound("Không tìm thấy đơn hàng");
         }
         return reviewRepository.reviewedProductIds(userId, orderId);
+    }
+
+    // ----------------------------------------------------------------- quản trị
+
+    /** filter: unseen (chưa xem) | low (1-2 sao) | all; rating: lọc đúng số sao. */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminReviewResponse> adminList(String filter, Integer rating, int page, int size) {
+        boolean unseen = "unseen".equals(filter);
+        Integer maxRating = "low".equals(filter) ? 2 : null;
+        if (rating != null && (rating < 1 || rating > 5)) throw ApiException.badRequest("Số sao phải từ 1 đến 5");
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50));
+        return PageResponse.from(reviewRepository.adminSearch(unseen, rating, maxRating, pageable), AdminReviewResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public long unseenCount() {
+        return reviewRepository.countByAdminSeenFalse();
+    }
+
+    @Transactional
+    public void markSeen(Long reviewId) {
+        ProductReview r = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> ApiException.notFound("Không tìm thấy đánh giá"));
+        r.setAdminSeen(true);
+    }
+
+    @Transactional
+    public int markAllSeen() {
+        return reviewRepository.markAllSeen();
     }
 
     /** Admin xoá đánh giá không phù hợp (spam, ngôn từ xấu...). */

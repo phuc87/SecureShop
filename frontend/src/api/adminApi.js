@@ -46,6 +46,11 @@ const adminApi = {
 
   // ===== Đánh giá =====
   deleteReview: (id) => axiosClient.delete(`/admin/reviews/${id}`),
+  /** params: { filter: 'unseen' | 'low' | 'all', rating, page, size } */
+  reviews: (params) => axiosClient.get('/admin/reviews', { params }),
+  reviewUnseenCount: () => axiosClient.get('/admin/reviews/unseen-count'),
+  markReviewSeen: (id) => axiosClient.patch(`/admin/reviews/${id}/seen`),
+  markAllReviewsSeen: () => axiosClient.post('/admin/reviews/seen-all'),
 
   // ===== Sản phẩm =====
   /** params: { q, categoryId, status, stock: 'low' | 'out', page, size } */

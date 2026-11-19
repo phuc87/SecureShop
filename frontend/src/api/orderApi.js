@@ -14,6 +14,8 @@ const orderApi = {
   // ===== Đánh giá sản phẩm (chỉ khi đơn đã hoàn thành) =====
   reviewEligibility: (productId) => axiosClient.get('/orders/review-eligibility', { params: { productId } }),
   createReview: (payload) => axiosClient.post('/orders/reviews', payload),
+  myReviews: (productId) => axiosClient.get('/orders/reviews/mine', { params: { productId } }),
+  updateReview: (id, payload) => axiosClient.put(`/orders/reviews/${id}`, payload),
   reviewedProducts: (orderId) => axiosClient.get(`/orders/${orderId}/reviewed-products`),
 };
 

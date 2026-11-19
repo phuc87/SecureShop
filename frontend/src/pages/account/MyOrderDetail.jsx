@@ -33,7 +33,7 @@ export default function MyOrderDetail() {
   const reviewAction = (it) => {
     if (!completed || !reviewed || !it.productSlug) return null;
     return reviewed.includes(it.productId)
-      ? <span className="oi-review done"><Icon name="checkCircle" size={14} /> Đã đánh giá</span>
+      ? <Link to={`/products/${it.productSlug}#reviews`} className="oi-review done"><Icon name="checkCircle" size={14} /> Đã đánh giá · Sửa</Link>
       : <Link to={`/products/${it.productSlug}#reviews`} className="oi-review"><Icon name="star" size={14} /> Viết đánh giá</Link>;
   };
 

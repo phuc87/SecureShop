@@ -79,6 +79,19 @@ public class OrderController {
         return reviewService.create(me.id(), request);
     }
 
+    /** GET /api/orders/reviews/mine?productId=5 : đánh giá của chính khách cho sản phẩm này. */
+    @GetMapping("/reviews/mine")
+    public List<ReviewResponse> myReviews(@AuthenticationPrincipal UserPrincipal me, @RequestParam Long productId) {
+        return reviewService.mine(me.id(), productId);
+    }
+
+    /** PUT /api/orders/reviews/{id}  body: { rating, comment } : khách sửa đánh giá của mình. */
+    @PutMapping("/reviews/{reviewId}")
+    public ReviewResponse updateReview(@AuthenticationPrincipal UserPrincipal me, @PathVariable Long reviewId,
+                                       @Valid @RequestBody com.secureshop.dto.review.UpdateReviewRequest request) {
+        return reviewService.update(me.id(), reviewId, request);
+    }
+
     /** GET /api/orders/{id}/reviewed-products : [productId...] đã đánh giá trong đơn này. */
     @GetMapping("/{id}/reviewed-products")
     public List<Long> reviewedProducts(@AuthenticationPrincipal UserPrincipal me, @PathVariable Long id) {

@@ -17,6 +17,8 @@ Thư mục `backend/src/main/resources/db/migration/`, import **theo đúng th�
 | `V5__chat_history_view.sql` | View `chat_history` để xem lịch sử chat dễ đọc |
 | `V6__favorites.sql` | Bảng `favorites`: sản phẩm yêu thích của khách (mỗi khách thích 1 sản phẩm tối đa 1 lần) |
 | `V7__vouchers.sql` | Bảng `vouchers` (mã giảm giá) + cột `orders.voucher_id`, `orders.voucher_code`; 3 mã mẫu |
+| `V8__review_admin_seen.sql` | Cột `product_reviews.admin_seen`: thông báo đánh giá mới cho admin |
+| `V9__review_updated_at.sql` | Cột `product_reviews.updated_at`: khách sửa đánh giá của mình (hiện "đã chỉnh sửa") |
 
 Flyway đang **tắt** (`spring.flyway.enabled=false`, phiên bản Flyway mới không hỗ trợ MariaDB 10.4), nên các file trên phải tự import. Hibernate chỉ kiểm tra entity có khớp bảng không (`ddl-auto: validate`).
 

@@ -13,12 +13,14 @@ import { formatDate } from '../../utils/format';
 
 const RATING_TEXT = ['', 'Rất tệ', 'Chưa hài lòng', 'Bình thường', 'Hài lòng', 'Tuyệt vời'];
 
-/** Form viết đánh giá: chỉ hiện khi khách đã mua và đơn đã hoàn thành. */
-function ReviewForm({ productId, eligibility, onCreated }) {
+/**
+ * Form viết đánh giá (khách đã mua, đơn hoàn thành) hoặc SỬA đánh giá của chính mình (editing = đánh giá cũ).
+ */
+function ReviewForm({ productId, eligibility, editing, onCreated, onCancel }) {
   const toast = useToast();
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(editing?.rating || 0);
   const [hover, setHover] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(editing?.comment || '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -28,8 +30,13 @@ function ReviewForm({ productId, eligibility, onCreated }) {
     setSaving(true);
     setError('');
     try {
-      await orderApi.createReview({ productId, orderId: eligibility.orderId, rating, comment: comment.trim() || null });
-      toast.success('Cảm ơn bạn đã đánh giá!');
+      if (editing) {
+        await orderApi.updateReview(editing.id, { rating, comment: comment.trim() || null });
+        toast.success('Đã cập nhật đánh giá của bạn');
+      } else {
+        await orderApi.createReview({ productId, orderId: eligibility.orderId, rating, comment: comment.trim() || null });
+        toast.success('Cảm ơn bạn đã đánh giá!');
+      }
       onCreated();
     } catch (err) {
       setError(err.message);
@@ -40,8 +47,8 @@ function ReviewForm({ productId, eligibility, onCreated }) {
   const shown = hover || rating;
   return (
     <form className="review-form" onSubmit={submit} noValidate>
-      <h3>Viết đánh giá của bạn</h3>
-      <p className="muted small">Bạn đã mua sản phẩm này trong đơn <b>{eligibility.orderCode}</b>.</p>
+      <h3>{editing ? 'Sửa đánh giá của bạn' : 'Viết đánh giá của bạn'}</h3>
+      {!editing && <p className="muted small">Bạn đã mua sản phẩm này trong đơn <b>{eligibility.orderCode}</b>.</p>}
       {error && <div className="alert alert-error" role="alert">{error}</div>}
       <fieldset className="star-picker" onMouseLeave={() => setHover(0)}>
         <legend>Chấm điểm *</legend>
@@ -57,14 +64,19 @@ function ReviewForm({ productId, eligibility, onCreated }) {
           <span className="star-picker-text" aria-hidden="true">{RATING_TEXT[shown] || 'Chọn số sao'}</span>
         </div>
       </fieldset>
-      <label className="field" htmlFor="review-comment">
+      <label className="field" htmlFor={editing ? `review-comment-${editing.id}` : 'review-comment'}>
         <span>Nhận xét (không bắt buộc)</span>
-        <textarea id="review-comment" className="input review-textarea" rows={4} maxLength={1000}
+        <textarea id={editing ? `review-comment-${editing.id}` : 'review-comment'} className="input review-textarea" rows={4} maxLength={1000}
                   placeholder="Chất lượng hình ảnh, độ dễ lắp đặt, ứng dụng điện thoại..."
                   value={comment} onChange={(e) => setComment(e.target.value)} />
         <small className="muted review-count">{comment.length}/1000</small>
       </label>
-      <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Đang gửi...' : 'Gửi đánh giá'}</button>
+      <div className="review-form-actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? 'Đang lưu...' : editing ? 'Lưu thay đổi' : 'Gửi đánh giá'}
+        </button>
+        {editing && <button type="button" className="btn btn-outline" onClick={onCancel} disabled={saving}>Huỷ</button>}
+      </div>
     </form>
   );
 }
@@ -81,6 +93,8 @@ export default function ProductReviews({ product, data, loading, page, onPageCha
   const [eligKey, setEligKey] = useState(0);
   const [deleting, setDeleting] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [mine, setMine] = useState([]);       // đánh giá của chính khách cho sản phẩm này
+  const [editingId, setEditingId] = useState(null);
 
   // Khách đã đăng nhập: hỏi xem có được viết đánh giá không
   useEffect(() => {
@@ -89,6 +103,14 @@ export default function ProductReviews({ product, data, loading, page, onPageCha
     orderApi.reviewEligibility(product.id)
       .then((res) => alive && setEligibility(res))
       .catch(() => alive && setEligibility(null));
+    return () => { alive = false; };
+  }, [user, canShop, product.id, eligKey]);
+
+  // Đánh giá của chính khách (để hiện khung "Đánh giá của bạn" + nút Sửa)
+  useEffect(() => {
+    if (!user || !canShop) { setMine([]); return; }
+    let alive = true;
+    orderApi.myReviews(product.id).then((res) => alive && setMine(res)).catch(() => alive && setMine([]));
     return () => { alive = false; };
   }, [user, canShop, product.id, eligKey]);
 
@@ -146,6 +168,31 @@ export default function ProductReviews({ product, data, loading, page, onPageCha
         </div>
       )}
 
+      {/* Đánh giá của chính khách: xem + sửa */}
+      {mine.length > 0 && (
+        <div className="my-reviews">
+          {mine.map((r) => (editingId === r.id ? (
+            <ReviewForm key={r.id} productId={product.id} editing={r}
+                        onCreated={() => { setEditingId(null); setEligKey((k) => k + 1); onChanged(); }}
+                        onCancel={() => setEditingId(null)} />
+          ) : (
+            <div key={r.id} className="my-review">
+              <div className="my-review-head">
+                <b>Đánh giá của bạn</b>
+                <button type="button" className="btn btn-sm btn-outline my-review-edit" onClick={() => setEditingId(r.id)}>
+                  <Icon name="tool" size={14} /> Sửa đánh giá
+                </button>
+              </div>
+              <Stars value={r.rating} size={16} />
+              {r.comment ? <p className="review-comment">{r.comment}</p> : <p className="muted small">(Bạn chưa viết nhận xét)</p>}
+              <span className="muted small">
+                {formatDate(r.createdAt)}{r.updatedAt && <> · đã chỉnh sửa {formatDate(r.updatedAt)}</>}
+              </span>
+            </div>
+          )))}
+        </div>
+      )}
+
       {/* Khu vực viết đánh giá */}
       {!user && (
         <p className="review-note">
@@ -153,7 +200,7 @@ export default function ProductReviews({ product, data, loading, page, onPageCha
           {' '}để viết đánh giá (dành cho khách đã mua sản phẩm).
         </p>
       )}
-      {user && canShop && eligibility && !eligibility.canReview && (
+      {user && canShop && eligibility && !eligibility.canReview && mine.length === 0 && (
         <p className="review-note">{eligibility.reason}</p>
       )}
       {user && canShop && eligibility?.canReview && (
@@ -173,7 +220,9 @@ export default function ProductReviews({ product, data, loading, page, onPageCha
                   <span className="review-avatar" aria-hidden="true">{r.customerName.charAt(0)}</span>
                   <div className="review-who">
                     <b>{r.customerName}</b>
-                    <span className="muted small">{formatDate(r.createdAt)} · <span className="text-success">Đã mua hàng</span></span>
+                    <span className="muted small">
+                      {formatDate(r.createdAt)}{r.updatedAt && ' (đã chỉnh sửa)'} · <span className="text-success">Đã mua hàng</span>
+                    </span>
                   </div>
                   {isAdmin && (
                     <button type="button" className="btn btn-sm btn-outline-danger review-delete"

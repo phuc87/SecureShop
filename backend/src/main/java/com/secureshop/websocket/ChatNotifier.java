@@ -39,6 +39,11 @@ public class ChatNotifier {
         afterCommit(() -> messaging.convertAndSendToUser(username, queue, payload));
     }
 
+    /** Sự kiện khác cho mọi admin trên cùng kênh (vd. type = REVIEW khi khách vừa đánh giá). */
+    public void toAdminsRaw(Object payload) {
+        afterCommit(() -> messaging.convertAndSend(ADMIN_TOPIC, payload));
+    }
+
     public void supportStatus(boolean online) {
         messaging.convertAndSend(SUPPORT_TOPIC, java.util.Map.of("online", online));
     }

@@ -32,6 +32,7 @@ import ProductForm from './pages/admin/ProductForm';
 import Catalog from './pages/admin/Catalog';
 import AiAssistant from './pages/admin/AiAssistant';
 import Vouchers from './pages/admin/Vouchers';
+import AdminReviews from './pages/admin/Reviews';
 
 export default function App() {
   return (
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="catalog" element={<Catalog />} />
           <Route path="ai" element={<AiAssistant />} />
           <Route path="vouchers" element={<Vouchers />} />
+          <Route path="reviews" element={<AdminReviews />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="users" element={<Users />} />
           <Route path="contacts" element={<Contacts />} />

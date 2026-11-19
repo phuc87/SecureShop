@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useChatSocket } from '../../context/ChatSocketContext';
+import { useToast } from '../../context/ToastContext';
 import adminApi from '../../api/adminApi';
 import chatApi from '../../api/chatApi';
 import ThemeToggle from '../common/ThemeToggle';
@@ -22,6 +23,8 @@ export default function AdminLayout() {
   const [newContacts, setNewContacts] = useState(0);
   const [unreadChat, setUnreadChat] = useState(0);
   const [pendingOrders, setPendingOrders] = useState(0);
+  const [newReviews, setNewReviews] = useState(0);
+  const toast = useToast();
   const chatTimer = useRef(null);
 
   // Chuyển trang thì đóng menu trượt
@@ -58,6 +61,22 @@ export default function AdminLayout() {
     };
   }, [pathname]);
 
+  // Đánh giá mới chưa xem: tải khi mở trang, khi admin xử lý xong, và NGAY khi khách vừa gửi đánh giá (WebSocket)
+  useEffect(() => {
+    const load = () => adminApi.reviewUnseenCount().then((r) => setNewReviews(r.count)).catch(() => {});
+    load();
+    window.addEventListener('reviews:changed', load);
+    const off = addListener((ev) => {
+      if (ev.type !== 'REVIEW') return;
+      load();
+      const msg = ev.edited
+        ? `${ev.customerName} vừa sửa đánh giá ${ev.oldRating}★ → ${ev.rating}★: ${ev.productName}`
+        : `Đánh giá mới ${ev.rating}★ từ ${ev.customerName}: ${ev.productName}`;
+      if (ev.rating <= 2) toast.error(msg); else toast.info(msg);
+    });
+    return () => { off(); window.removeEventListener('reviews:changed', load); };
+  }, [addListener, toast]);
+
   // Số tin chat chưa đọc: tải lại mỗi khi có sự kiện chat (gộp các sự kiện sát nhau)
   useEffect(() => {
     const load = () => chatApi.adminUnreadCount().then((r) => setUnreadChat(r.count)).catch(() => {});
@@ -77,7 +96,7 @@ export default function AdminLayout() {
     return () => { document.title = 'SecureShop - Thiết bị an ninh'; };
   }, [unreadChat]);
 
-  const totalBadge = unreadChat + newContacts + pendingOrders;
+  const totalBadge = unreadChat + newContacts + pendingOrders + newReviews;
 
   return (
     <div className={`admin-shell ${navOpen ? 'nav-open' : ''}`}>
@@ -97,6 +116,9 @@ export default function AdminLayout() {
           <NavLink to="/admin/products">Sản phẩm</NavLink>
           <NavLink to="/admin/catalog">Danh mục &amp; thương hiệu</NavLink>
           <NavLink to="/admin/vouchers">Mã giảm giá</NavLink>
+          <NavLink to="/admin/reviews">
+            Đánh giá {newReviews > 0 && <span className="menu-badge" aria-label={`${newReviews} đánh giá mới`}>{newReviews}</span>}
+          </NavLink>
           <NavLink to="/admin/inbox">
             Hộp thư tư vấn {unreadChat > 0 && <span className="menu-badge" aria-label={`${unreadChat} tin chưa đọc`}>{unreadChat}</span>}
           </NavLink>

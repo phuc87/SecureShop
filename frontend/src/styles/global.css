@@ -429,9 +429,31 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ---------- Toast ---------- */
 .toast-stack { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 100; }
-.toast { padding: 12px 16px; border-radius: 8px; color: #fff; box-shadow: var(--shadow); max-width: 360px; font-size: 14px; animation: toast-in .2s ease-out; }
-.toast-success { background: #13325f; }
-.toast-error { background: var(--danger-fill); }
+/* Thông báo dạng thẻ: nền theo giao diện (sáng/tối), viền màu + icon theo loại -> luôn nổi rõ trên mọi nền */
+.toast {
+  --toast-c: var(--primary-fill);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start;
+  padding: 12px 10px 12px 14px; border-radius: 10px; max-width: 380px; font-size: 14px; line-height: 1.45;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line-strong); border-left: 5px solid var(--toast-c);
+  box-shadow: 0 10px 30px rgba(10, 20, 40, .28), 0 2px 6px rgba(10, 20, 40, .18);
+  animation: toast-in .2s ease-out;
+}
+.toast-success { --toast-c: var(--success-fill); }
+.toast-error { --toast-c: var(--danger-fill); }
+.toast-info { --toast-c: var(--primary-fill); }
+.toast-icon {
+  width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: var(--toast-c); color: #fff; margin-top: -1px;
+}
+.toast-text { font-weight: 500; overflow-wrap: anywhere; }
+.toast-close {
+  width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px;
+  background: none; color: var(--muted); cursor: pointer; margin: -2px -2px 0 0;
+}
+.toast-close:hover { background: var(--bg); color: var(--ink); }
+:root[data-theme="dark"] .toast { background: #263247; border-color: #3b4a63; box-shadow: 0 10px 30px rgba(0, 0, 0, .6); }
+:root[data-theme="dark"] .toast-close:hover { background: rgba(255, 255, 255, .08); }
 @keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
 
 /* ---------- Footer ---------- */

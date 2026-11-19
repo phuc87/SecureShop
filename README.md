@@ -50,7 +50,7 @@ SecureShop/
 
 **Cần cài:** JDK 17, Maven, Node.js 20+, Python 3.11+, XAMPP (MySQL).
 
-1. **Database:** mở XAMPP, bật MySQL, vào phpMyAdmin tạo database `secureshop_ai` (collation `utf8mb4_unicode_ci`), rồi import lần lượt các file `V1` → `V7` trong `backend/src/main/resources/db/migration/`. Chi tiết: [database/README.md](database/README.md).
+1. **Database:** mở XAMPP, bật MySQL, vào phpMyAdmin tạo database `secureshop_ai` (collation `utf8mb4_unicode_ci`), rồi import lần lượt các file `V1` → `V9` trong `backend/src/main/resources/db/migration/`. Chi tiết: [database/README.md](database/README.md).
 2. **Cấu hình bí mật:** copy `backend/secrets.properties.example` thành `backend/secrets.properties`, điền Gmail + App Password để gửi email (Google Client ID nếu muốn đăng nhập Google). File này **không** được đưa lên Git.
 3. **Chạy:** nhấp đúp `start-all.bat` (bật backend, AI service, frontend). Mở http://localhost:5173
 
